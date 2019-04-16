@@ -80,19 +80,19 @@ func newDefMsgProcCell(creator WorkerCreator, size int) MsgProcCell {
 //
 func (s *DefMsgProcCell) Add(peer Session) {
 	s.p.Lock()
-	defer s.p.Unlock()
 	s.peers[peer.ID()] = true
+	s.p.Unlock()
 	atomic.AddInt64(&s.c, 1)
 }
 
 //
 func (s *DefMsgProcCell) Remove(peer Session) {
 	s.p.Lock()
-	defer s.p.Unlock()
 	if _, ok := s.peers[peer.ID()]; ok {
 		delete(s.peers, peer.ID())
 		atomic.AddInt64(&s.c, -1)
 	}
+	s.p.Unlock()
 }
 
 //
@@ -132,13 +132,14 @@ func (s *DefMsgProcCell) Exec(cb func()) {
 //Append 添加空闲回调
 func (s *DefMsgProcCell) Append(cb func()) {
 	s.l.Lock()
-	defer s.l.Unlock()
 	s.cbs = append(s.cbs, cb)
+	s.l.Unlock()
 	s.msq.Signal()
 }
 
 //Run 轮询
 func (s *DefMsgProcCell) Run() {
+	//捕获异常
 	defer func() {
 		if r := recover(); r != nil {
 			log.Fatalln(debug.Stack())
@@ -160,11 +161,6 @@ EXIT:
 			runtime.Gosched()
 		}
 		i++
-		defer func() {
-			if r := recover(); r != nil {
-				log.Fatalln(debug.Stack())
-			}
-		}()
 		//定时器轮询
 		//log.Printf("--- *** ----------------------------- [%05d]Run Poll begin...\n", s.pid)
 		bv := timer.Poll(s.pid, worker.OnTimer)

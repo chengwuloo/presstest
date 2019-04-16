@@ -38,9 +38,9 @@ func newSessionMgr() SessionMgr {
 
 func (s *defaultSessionMgr) Add(conn interface{}) Session {
 	s.l.Lock()
-	defer s.l.Unlock()
 	peer := newSession(conn)
 	s.peers[peer.ID()] = peer
+	s.l.Unlock()
 	atomic.AddInt64(&s.c, 1)
 	return peer
 }
@@ -48,20 +48,21 @@ func (s *defaultSessionMgr) Add(conn interface{}) Session {
 //
 func (s *defaultSessionMgr) Remove(peer Session) {
 	s.l.Lock()
-	defer s.l.Unlock()
 	if _, ok := s.peers[peer.ID()]; ok {
 		delete(s.peers, peer.ID())
 		atomic.AddInt64(&s.c, -1)
 	}
+	s.l.Unlock()
 }
 
 //
 func (s *defaultSessionMgr) Get(sesID int64) Session {
 	s.l.Lock()
-	defer s.l.Unlock()
 	if peer, ok := s.peers[sesID]; ok {
+		s.l.Unlock()
 		return peer
 	}
+	s.l.Unlock()
 	return nil
 }
 
@@ -73,10 +74,10 @@ func (s *defaultSessionMgr) Count() int64 {
 //
 func (s *defaultSessionMgr) CloseAll() {
 	s.l.Lock()
-	defer s.l.Unlock()
 	for _, peer := range s.peers {
 		peer.Close()
 	}
+	s.l.Unlock()
 }
 
 func (s *defaultSessionMgr) Wait() {

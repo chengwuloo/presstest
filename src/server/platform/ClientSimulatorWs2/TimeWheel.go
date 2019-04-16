@@ -6,8 +6,6 @@ package main
 //
 
 import (
-	"log"
-	"runtime/debug"
 	"sync"
 	"sync/atomic"
 )
@@ -50,25 +48,25 @@ func newBucket() *Bucket {
 //Add 添加元素到桶
 func (s *Bucket) Add(val int64) {
 	s.l.Lock()
-	defer s.l.Unlock()
 	s.v[val] = true
+	s.l.Unlock()
 }
 
 //Remove 从桶里面移除
 func (s *Bucket) Remove(val int64) bool {
 	s.l.Lock()
-	defer s.l.Unlock()
 	if _, ok := s.v[val]; ok {
 		delete(s.v, val)
+		s.l.Unlock()
 		return true
 	}
+	s.l.Unlock()
 	return false
 }
 
 //Pop 弹出桶里面所有元素
 func (s *Bucket) Pop() (v []int64) {
 	s.l.Lock()
-	defer s.l.Unlock()
 	//取出桶内所有id
 	for id := range s.v {
 		v = append(v, id)
@@ -77,6 +75,7 @@ func (s *Bucket) Pop() (v []int64) {
 	if len(s.v) > 0 {
 		s.v = map[int64]bool{}
 	}
+	s.l.Unlock()
 	return
 }
 
@@ -113,11 +112,11 @@ func (s *DefTimeWheel) GetTimer() ScopedTimer {
 
 //UpdateWheel 定时器tick调用
 func (s *DefTimeWheel) UpdateWheel() (v []int64) {
-	defer func() {
-		if r := recover(); r != nil {
-			log.Panicln(debug.Stack())
-		}
-	}()
+	// defer func() {
+	// 	if r := recover(); r != nil {
+	// 		log.Fatalln(debug.Stack())
+	// 	}
+	// }()
 	s.cursor = atomic.AddInt32(&s.cursor, 1) % s.size
 	//log.Printf("--- *** PID[%07d] [%05d] UpdateWheel[检测] size:%d cursor:%d\n", os.Getpid(), s.pid, s.size, s.cursor)
 	v = s.ring[s.cursor].Pop()
@@ -127,11 +126,11 @@ func (s *DefTimeWheel) UpdateWheel() (v []int64) {
 //PushBucket 登陆成功压入桶
 //PushBucket return newcursor 初始游标位置
 func (s *DefTimeWheel) PushBucket(val int64, timeout int32) int32 {
-	defer func() {
-		if r := recover(); r != nil {
-			log.Println(debug.Stack())
-		}
-	}()
+	// defer func() {
+	// 	if r := recover(); r != nil {
+	// 		log.Fatalln(debug.Stack())
+	// 	}
+	// }()
 	newcursor := (s.cursor + timeout) % s.size
 	//log.Printf("--- *** PID[%07d] [%05d] PushBucket[{{{压入}}}] size:%d csursor:%d newcursor:%d\n", os.Getpid(), s.pid, s.size, s.cursor, newcursor)
 	bucket := s.ring[newcursor]
@@ -145,11 +144,11 @@ func (s *DefTimeWheel) PushBucket(val int64, timeout int32) int32 {
 //UpdateBucket return newcursor 新的游标位置
 //----------------------------------------------------------
 func (s *DefTimeWheel) UpdateBucket(oldcuror int32, val int64, timeout int32) int32 {
-	defer func() {
-		if r := recover(); r != nil {
-			log.Println(debug.Stack())
-		}
-	}()
+	// defer func() {
+	// 	if r := recover(); r != nil {
+	// 		log.Fatalln(debug.Stack())
+	// 	}
+	// }()
 	if oldcuror == INVALIDCURSORPOS {
 		//log.Printf("--- *** PID[%07d] [%05d] UpdateBucket oldcuror == INVALIDCURSORPOS\n", os.Getpid(), s.pid)
 		return INVALIDCURSORPOS

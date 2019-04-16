@@ -38,7 +38,7 @@ type HTTPAuthData struct {
 func HTTPGetToken(httpaddr string, account int64) (token string, e error) {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Println(debug.Stack())
+			log.Fatalln(debug.Stack())
 		}
 	}()
 	//requrl := fmt.Sprintf("http://%s/GameHandle?testAccount=%d", httpaddr, account)

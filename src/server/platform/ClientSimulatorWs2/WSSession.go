@@ -163,12 +163,12 @@ func (s *WSSession) GetCtx(key int) interface{} {
 
 //读协程
 func (s *WSSession) readLoop() {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Fatalln(debug.Stack())
+		}
+	}()
 	for {
-		defer func() {
-			if r := recover(); r != nil {
-				log.Println(debug.Stack())
-			}
-		}()
 		msg, err := s.Channel.OnRecvMessage(s)
 		if err != nil {
 			//log.Println("readLoop: ", err)
@@ -201,12 +201,12 @@ func (s *WSSession) readLoop() {
 
 //写协程
 func (s *WSSession) writeLoop() {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Fatalln(debug.Stack())
+		}
+	}()
 	for {
-		defer func() {
-			if r := recover(); r != nil {
-				log.Println(debug.Stack())
-			}
-		}()
 		msgs, exit := s.WMsq.Pick()
 		for _, msg := range msgs {
 			err := s.Channel.OnSendMessage(s, msg)
@@ -244,7 +244,6 @@ func (s *WSSession) Close() {
 	//本端关闭连接
 	if 0 == atomic.SwapInt64(&s.closing, 1) && s.conn != nil {
 		//通知写退出
-		log.Println("通知写退出..........")
 		s.WMsq.Push(nil)
 	}
 }
