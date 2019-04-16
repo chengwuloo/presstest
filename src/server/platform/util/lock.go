@@ -17,11 +17,11 @@ type SpinLock struct {
 
 //
 func NewPxMutex() *SpinLock {
-	return &PxMutex{atm: 0, cur: 1}
+	return &SpinLock{atm: 0, cur: 1}
 }
 
 //
-func (s *PxMutex) Wait() {
+func (s *SpinLock) Wait() {
 	idx := atomic.AddUint64(&s.atm, 1)
 	for idx != s.cur {
 		runtime.Gosched()
@@ -29,19 +29,16 @@ func (s *PxMutex) Wait() {
 }
 
 //
-func (s *PxMutex) Signal() {
+func (s *SpinLock) Signal() {
 	s.cur++
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
 //
-type LockStat int32
-
-//
 const (
-	Idle   LockStat = 100
-	Locked LockStat = 101
+	Idle   = 100
+	Locked = 101
 )
 
 //
@@ -54,7 +51,7 @@ func NewAxMutex() *AxMutex {
 	return &AxMutex{stat: int32(Idle)}
 }
 
-// 
+//
 func (s *AxMutex) Lock() {
 	for s.tryLock() == false {
 		runtime.Gosched()
@@ -68,10 +65,10 @@ func (s *AxMutex) Unlock() {
 
 //
 func (s *AxMutex) tryLock() bool {
-	return atomic.CompareAndSwapInt32(&s.stat, int32(Idle), int32(Locked))
+	return atomic.CompareAndSwapInt32(&s.stat, Idle, Locked)
 }
 
 //
 func (s *AxMutex) tryUnLock() bool {
-	return atomic.CompareAndSwapInt32(&s.stat, int32(Locked), int32(Idle))
+	return atomic.CompareAndSwapInt32(&s.stat, Locked, Idle)
 }
