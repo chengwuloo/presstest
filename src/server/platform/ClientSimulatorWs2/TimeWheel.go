@@ -6,6 +6,8 @@ package main
 //
 
 import (
+	"log"
+	"os"
 	"sync"
 	"sync/atomic"
 )
@@ -161,7 +163,7 @@ func (s *DefTimeWheel) UpdateBucket(oldcuror int32, val int64, timeout int32) in
 		newcursor = (s.cursor + timeout) % s.size
 		bucket = s.ring[newcursor]
 		bucket.Add(val)
-		//log.Printf("--- *** PID[%07d] [%05d] UpdateBucket[{{{更新}}}][SUCC] size:%d cursor:%d oldcursor:%d newcursor:%d\n", os.Getpid(), s.pid, s.size, s.cursor, oldcuror, newcursor)
+		log.Printf("--- *** PID[%07d] [%05d] UpdateBucket[{{{更新}}}][SUCC] size:%d cursor:%d oldcursor:%d newcursor:%d\n", os.Getpid(), s.pid, s.size, s.cursor, oldcuror, newcursor)
 	} else {
 		//移除失败，已经被超时清理
 		//log.Printf("--- *** PID[%07d] [%05d] UpdateBucket[{{{更新}}}][FAILED] size:%d cursor:%d oldcursor:%d newcursor:%d\n", os.Getpid(), s.pid, s.size, s.cursor, oldcuror, newcursor)

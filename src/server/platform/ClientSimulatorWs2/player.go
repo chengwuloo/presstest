@@ -71,10 +71,7 @@ func (s *Player) OnTimer(timerID uint32, dt int32, args interface{}) bool {
 			if peer != nil {
 				client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 				log.Printf("--- *** PID[%07d] player[%d:%d:%s] :: OnTimer 心跳超时 !!!!!!!!!!!!!!!",
-					os.Getpid(),
-					client.UserID,
-					client.Account,
-					client.Token)
+					os.Getpid(), client.UserID, client.Account, client.Token)
 				//peer.Close() //超时关闭连接
 			}
 		}
