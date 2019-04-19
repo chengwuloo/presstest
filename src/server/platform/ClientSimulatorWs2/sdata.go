@@ -13,10 +13,22 @@ type Game struct {
 	ByName map[string]int32 //房间列表
 }
 
+//
+func (s *Game) Exist(roomID int32) bool {
+	_, ok := s.ByID[roomID]
+	return ok
+}
+
 //Games 游戏列表
 type Games struct {
 	ByID   map[int32]Game  //游戏列表
 	ByName map[string]Game //游戏列表
+}
+
+//
+func (s *Games) Exist(gameID int32) (*Game, bool) {
+	p, ok := s.ByID[gameID]
+	return &p, ok
 }
 
 //

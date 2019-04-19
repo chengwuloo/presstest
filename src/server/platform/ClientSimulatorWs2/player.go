@@ -17,6 +17,7 @@ import (
 	"server/pb/HongHei"
 	"server/pb/Longhu"
 	"server/platform/util"
+	"sync/atomic"
 )
 
 //
@@ -98,7 +99,7 @@ func (s *Player) OnTimer(timerID uint32, dt int32, args interface{}) bool {
 func (s *Player) resultPlayerLogin(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*HallServer.LoginMessageResponse)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("resultPlayerLogin ", ok)
 	}
 	if rspdata.RetCode == 0 {
 		client := peer.GetCtx(TagUserInfo).(*DefWSClient)
@@ -113,12 +114,23 @@ func (s *Player) resultPlayerLogin(msg interface{}, peer Session) {
 		client.Cursor = s.entry.GetTimeWheel().PushBucket(peer.ID(), int32(*timeout)/1000)
 		//登陆成功，间隔发送心跳包
 		client.HeartID = s.entry.RunAfter(int32(*heartbeat), client)
-		//登陆成功，获取游戏列表
-		reqGameListInfo(peer)
+		//游戏类型和房间都有效，则进入房间
+		p, ok := GGames.Exist(int32(*subGameID))
+		if 0 != *subGameID && 0 != *subRoomID && ok && p.Exist(int32(*subRoomID)) {
+			//登陆成功，获取游戏列表
+			//reqGameListInfo(peer)
+		}
 	} else {
 		util.Logy("UserClient", "Player", "resultPlayerLogin", rspdata)
 		//失败关闭
 		//peer.Close()
+	}
+	c := atomic.AddInt64(&gClients, 1)
+	if c%int64(*numClient) == 0 {
+		if c >= int64(*totalClient) {
+			return
+		}
+		StartParallRequest(c)
 	}
 }
 
@@ -145,7 +157,7 @@ func (s *Player) resultKeepAlive(msg interface{}, peer Session) {
 func (s *Player) resultGameListInfo(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*HallServer.GetGameMessageResponse)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("resultGameListInfo ", ok)
 	}
 	util.Log("UserClient", "Player", "resultGameListInfo", rspdata)
 	// reqGameserverInfo(peer,
@@ -153,7 +165,7 @@ func (s *Player) resultGameListInfo(msg interface{}, peer Session) {
 	// 	GGames.ByName["龙虎斗"].ByName["初级房"])
 	//*subGameID = GGames.ByName["红黑大战"].ID
 	//*subRoomID = GGames.ByName["红黑大战"].ByName["体验房"]
-	reqGameserverInfo(peer, int32(*subGameID), int32(*subRoomID))
+	//reqGameserverInfo(peer, int32(*subGameID), int32(*subRoomID))
 }
 
 //resultGameserverInfo 服务端返回 - 获取游戏IP
@@ -161,7 +173,7 @@ func (s *Player) resultGameListInfo(msg interface{}, peer Session) {
 func (s *Player) resultGameserverInfo(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*HallServer.GetGameServerMessageResponse)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("resultGameserverInfo ", ok)
 	}
 	util.Log("UserClient", "Player", "resultGameserverInfo", rspdata)
 	if rspdata.RetCode == 0 {
@@ -178,7 +190,7 @@ func (s *Player) resultGameserverInfo(msg interface{}, peer Session) {
 func (s *Player) resultPlayerEnterRoom(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*GameServer.MSG_S2C_UserEnterMessageResponse)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("resultPlayerEnterRoom ", ok)
 	}
 	util.Log("UserClient", "Player", "resultPlayerEnterRoom", rspdata)
 	if rspdata.RetCode == 0 {
@@ -201,7 +213,7 @@ func (s *Player) resultPlayerEnterRoom(msg interface{}, peer Session) {
 func (s *Player) onPlayerEnterNotify(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*GameServer.MSG_S2C_UserBaseInfo)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onPlayerEnterNotify ", ok)
 	}
 	util.Log("UserClient", "Player", "onPlayerEnterNotify", rspdata)
 }
@@ -211,7 +223,7 @@ func (s *Player) onPlayerEnterNotify(msg interface{}, peer Session) {
 func (s *Player) onPlayerScoreNotify(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*GameServer.MSG_S2C_UserScoreInfo)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onPlayerScoreNotify ", ok)
 	}
 	util.Log("UserClient", "Player", "onPlayerScoreNotify", rspdata)
 }
@@ -221,7 +233,7 @@ func (s *Player) onPlayerScoreNotify(msg interface{}, peer Session) {
 func (s *Player) onPlayerStatusNotify(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*GameServer.MSG_S2C_GameUserStatus)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onPlayerStatusNotify ", ok)
 	}
 	util.Log("UserClient", "Player", "onPlayerStatusNotify", rspdata)
 }
@@ -231,7 +243,7 @@ func (s *Player) onPlayerStatusNotify(msg interface{}, peer Session) {
 func (s *Player) resultPlayerReady(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*GameServer.MSG_S2C_UserReadyMessageResponse)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("resultPlayerReady ", ok)
 	}
 	util.Log("UserClient", "Player", "resultPlayerReady", rspdata)
 }
@@ -241,7 +253,7 @@ func (s *Player) resultPlayerReady(msg interface{}, peer Session) {
 func (s *Player) resultPlayerLeave(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*GameServer.MSG_C2S_UserLeftMessageResponse)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("resultPlayerLeave ", ok)
 	}
 	util.Log("UserClient", "Player", "resultPlayerLeave", rspdata)
 }
@@ -255,7 +267,7 @@ func (s *Player) resultPlayerLeave(msg interface{}, peer Session) {
 func (s *Player) onGameStartErBaGang(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*ErBaGang.CMD_S_GameStart)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onGameStartErBaGang ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onGameStartErBaGang", rspdata)
@@ -272,7 +284,7 @@ func (s *Player) onGameStartErBaGang(msg interface{}, peer Session) {
 func (s *Player) onGameEndErBaGang(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*ErBaGang.CMD_S_GameEnd)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onGameEndErBaGang ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onGameEndErBaGang", rspdata)
@@ -283,7 +295,7 @@ func (s *Player) onGameEndErBaGang(msg interface{}, peer Session) {
 func (s *Player) onSceneGameStartErBaGang(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*ErBaGang.CMD_S_Scene_GameStart)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onSceneGameStartErBaGang ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onSceneGameStartErBaGang", rspdata)
@@ -294,7 +306,7 @@ func (s *Player) onSceneGameStartErBaGang(msg interface{}, peer Session) {
 func (s *Player) onSceneGameEndErBaGang(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*ErBaGang.CMD_S_Scene_GameEnd)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onSceneGameEndErBaGang ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onSceneGameEndErBaGang", rspdata)
@@ -316,7 +328,7 @@ func (s *Player) onPlayerListErBaGang(msg interface{}, peer Session) {
 func (s *Player) onPlaceJetSuccessErBaGang(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*ErBaGang.CMD_S_PlaceJetSuccess)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onPlaceJetSuccessErBaGang ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onPlaceJetSuccessErBaGang", rspdata)
@@ -327,7 +339,7 @@ func (s *Player) onPlaceJetSuccessErBaGang(msg interface{}, peer Session) {
 func (s *Player) onPlaceJettonFailErBaGang(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*ErBaGang.CMD_S_PlaceJettonFail)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onPlaceJettonFailErBaGang ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	//util.Logx("UserClient", "Player", client.UserID, client.Account, "onPlaceJettonFailErBaGang", rspdata)
@@ -345,7 +357,7 @@ func (s *Player) onPlaceJettonFailErBaGang(msg interface{}, peer Session) {
 func (s *Player) onGameJettonErBaGang(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*ErBaGang.CMD_S_GameJetton)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onGameJettonErBaGang ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onGameJettonErBaGang", rspdata)
@@ -361,7 +373,7 @@ func (s *Player) onGameJettonErBaGang(msg interface{}, peer Session) {
 func (s *Player) onSceneGameJettonErBaGang(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*ErBaGang.CMD_S_Scene_GameJetton)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onSceneGameJettonErBaGang ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onSceneGameJettonErBaGang", rspdata)
@@ -383,7 +395,7 @@ func (s *Player) onQueryPlayerListErBaGang(msg interface{}, peer Session) {
 func (s *Player) onJettonBroadcastErBaGang(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*ErBaGang.CMD_S_Jetton_Broadcast)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onJettonBroadcastErBaGang ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onJettonBroadcastErBaGang", rspdata)
@@ -398,7 +410,7 @@ func (s *Player) onJettonBroadcastErBaGang(msg interface{}, peer Session) {
 func (s *Player) onSyncTimeLonghu(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*Longhu.CMD_S_SyncTime_Res)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onSyncTimeLonghu ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onSyncTimeLonghu", rspdata)
@@ -409,7 +421,7 @@ func (s *Player) onSyncTimeLonghu(msg interface{}, peer Session) {
 func (s *Player) onSceneStatusFreeLonghu(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*Longhu.CMD_Scene_StatusFree)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onSceneStatusFreeLonghu ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onSceneStatusFreeLonghu", rspdata)
@@ -420,7 +432,7 @@ func (s *Player) onSceneStatusFreeLonghu(msg interface{}, peer Session) {
 func (s *Player) onGameStartLonghu(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*Longhu.CMD_S_GameStart)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onGameStartLonghu ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onGameStartLonghu", rspdata)
@@ -431,7 +443,7 @@ func (s *Player) onGameStartLonghu(msg interface{}, peer Session) {
 func (s *Player) onPlaceJetSuccessLonghu(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*Longhu.CMD_S_PlaceJetSuccess)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onPlaceJetSuccessLonghu ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onPlaceJetSuccessLonghu", rspdata)
@@ -442,7 +454,7 @@ func (s *Player) onPlaceJetSuccessLonghu(msg interface{}, peer Session) {
 func (s *Player) onGameEndLonghu(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*Longhu.CMD_S_GameEnd)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onGameEndLonghu ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onGameEndLonghu", rspdata)
@@ -453,7 +465,7 @@ func (s *Player) onGameEndLonghu(msg interface{}, peer Session) {
 func (s *Player) onGameRecordLonghu(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*Longhu.CMD_S_GameRecord)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onGameRecordLonghu ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onGameRecordLonghu", rspdata)
@@ -464,7 +476,7 @@ func (s *Player) onGameRecordLonghu(msg interface{}, peer Session) {
 func (s *Player) onPlaceJettonFailLonghu(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*Longhu.CMD_S_PlaceJettonFail)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onPlaceJettonFailLonghu ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	//util.Logx("UserClient", "Player", client.UserID, client.Account, "onPlaceJettonFailLonghu", rspdata)
@@ -482,7 +494,7 @@ func (s *Player) onPlaceJettonFailLonghu(msg interface{}, peer Session) {
 func (s *Player) onQueryPlayerListLonghu(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*Longhu.CMD_S_PlayerList)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onQueryPlayerListLonghu ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onQueryPlayerListLonghu", rspdata)
@@ -508,7 +520,7 @@ func (s *Player) onStartPlaceJettonLonghu(msg interface{}, peer Session) {
 func (s *Player) onJettonBroadcastLonghu(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*Longhu.CMD_S_Jetton_Broadcast)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onJettonBroadcastLonghu ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onJettonBroadcastLonghu", rspdata)
@@ -523,7 +535,7 @@ func (s *Player) onJettonBroadcastLonghu(msg interface{}, peer Session) {
 func (s *Player) onSyncTimeBrnn(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*Brnn.CMD_S_SyncTime_Res)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onSyncTimeBrnn ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onSyncTimeBrnn", rspdata)
@@ -534,7 +546,7 @@ func (s *Player) onSyncTimeBrnn(msg interface{}, peer Session) {
 func (s *Player) onSceneStatusFreeBrnn(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*Brnn.CMD_Scene_StatusFree)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onSceneStatusFreeBrnn ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onSceneStatusFreeBrnn", rspdata)
@@ -545,7 +557,7 @@ func (s *Player) onSceneStatusFreeBrnn(msg interface{}, peer Session) {
 func (s *Player) onGameStartBrnn(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*Brnn.CMD_S_GameStart)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onGameStartBrnn ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onGameStartBrnn", rspdata)
@@ -556,7 +568,7 @@ func (s *Player) onGameStartBrnn(msg interface{}, peer Session) {
 func (s *Player) onPlaceJetSuccessBrnn(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*Brnn.CMD_S_PlaceJetSuccess)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onPlaceJetSuccessBrnn ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onPlaceJetSuccessBrnn", rspdata)
@@ -573,7 +585,7 @@ func (s *Player) onPlaceJetSuccessBrnn(msg interface{}, peer Session) {
 func (s *Player) onGameEndBrnn(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*Brnn.CMD_S_GameEnd)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onGameEndBrnn ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onGameEndBrnn", rspdata)
@@ -584,7 +596,7 @@ func (s *Player) onGameEndBrnn(msg interface{}, peer Session) {
 func (s *Player) onGameRecordBrnn(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*Brnn.CMD_S_GameRecord)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onGameRecordBrnn ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onGameRecordBrnn", rspdata)
@@ -595,7 +607,7 @@ func (s *Player) onGameRecordBrnn(msg interface{}, peer Session) {
 func (s *Player) onPlaceJettonFailBrnn(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*Brnn.CMD_S_PlaceJettonFail)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onPlaceJettonFailBrnn ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	//util.Logx("UserClient", "Player", client.UserID, client.Account, "onPlaceJettonFailBrnn", rspdata)
@@ -613,7 +625,7 @@ func (s *Player) onPlaceJettonFailBrnn(msg interface{}, peer Session) {
 func (s *Player) onPlayerListBrnn(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*Brnn.CMD_S_PlayerList)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onPlayerListBrnn ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onPlayerListBrnn", rspdata)
@@ -624,7 +636,7 @@ func (s *Player) onPlayerListBrnn(msg interface{}, peer Session) {
 func (s *Player) onStartJettonBrnn(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*Brnn.CMD_S_StartPlaceJetton)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onStartJettonBrnn ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onStartJettonBrnn", rspdata)
@@ -639,7 +651,7 @@ func (s *Player) onStartJettonBrnn(msg interface{}, peer Session) {
 func (s *Player) onJettonBroadcastBrnn(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*Brnn.CMD_S_Jetton_Broadcast)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onJettonBroadcastBrnn ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onJettonBroadcastBrnn", rspdata)
@@ -654,7 +666,7 @@ func (s *Player) onJettonBroadcastBrnn(msg interface{}, peer Session) {
 func (s *Player) onSceneStatusFreeHongHei(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*HongHei.CMD_Scene_StatusFree)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onSceneStatusFreeHongHei ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onSceneStatusFreeHongHei", rspdata)
@@ -665,7 +677,7 @@ func (s *Player) onSceneStatusFreeHongHei(msg interface{}, peer Session) {
 func (s *Player) onGameStartHongHei(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*HongHei.CMD_S_GameStart)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onGameStartHongHei ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onGameStartHongHei", rspdata)
@@ -676,7 +688,7 @@ func (s *Player) onGameStartHongHei(msg interface{}, peer Session) {
 func (s *Player) onPlaceJetSuccessHongHei(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*HongHei.CMD_S_PlaceJetSuccess)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onPlaceJetSuccessHongHei ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onPlaceJetSuccessHongHei", rspdata)
@@ -693,7 +705,7 @@ func (s *Player) onPlaceJetSuccessHongHei(msg interface{}, peer Session) {
 func (s *Player) onGameEndHongHei(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*HongHei.CMD_S_GameEnd)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onGameEndHongHei ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onGameEndHongHei", rspdata)
@@ -704,7 +716,7 @@ func (s *Player) onGameEndHongHei(msg interface{}, peer Session) {
 func (s *Player) onGameRecordHongHei(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*HongHei.CMD_S_GameRecord)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onGameRecordHongHei ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onGameRecordHongHei", rspdata)
@@ -715,7 +727,7 @@ func (s *Player) onGameRecordHongHei(msg interface{}, peer Session) {
 func (s *Player) onPlaceJettonFailHongHei(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*HongHei.CMD_S_PlaceJettonFail)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onPlaceJettonFailHongHei ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	//util.Logx("UserClient", "Player", client.UserID, client.Account, "onPlaceJettonFailHongHei", rspdata)
@@ -733,7 +745,7 @@ func (s *Player) onPlaceJettonFailHongHei(msg interface{}, peer Session) {
 func (s *Player) onPlayerListHongHei(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*HongHei.CMD_S_PlayerList)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onPlayerListHongHei ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onPlayerListHongHei", rspdata)
@@ -744,7 +756,7 @@ func (s *Player) onPlayerListHongHei(msg interface{}, peer Session) {
 func (s *Player) onStartJettonHongHei(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*HongHei.CMD_S_StartPlaceJetton)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onStartJettonHongHei ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onStartJettonHongHei", rspdata)
@@ -759,7 +771,7 @@ func (s *Player) onStartJettonHongHei(msg interface{}, peer Session) {
 func (s *Player) onJettonBroadcastHongHei(msg interface{}, peer Session) {
 	rspdata, ok := msg.(*HongHei.CMD_S_Jetton_Broadcast)
 	if !ok {
-		log.Fatalln(ok)
+		log.Fatalln("onJettonBroadcastHongHei ", ok)
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onJettonBroadcastHongHei", rspdata)

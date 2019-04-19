@@ -61,8 +61,8 @@ func (s *MyWsTransmit) OnRecvMessage(peer Session) (interface{}, error) {
 	//CRC校验
 	crc := GetChecksum(buf[4:])
 	if crc != chsum {
-		log.Fatalln("OnRecvMessage: RecvPacket GetChecksum error")
-		return nil, errors.New("RecvPacket GetChecksum error")
+		log.Fatalln("OnRecvMessage: GetChecksum error")
+		return nil, errors.New("GetChecksum error")
 	}
 	// //版本0x0001
 	// ver := binary.LittleEndian.Uint16(buf[4:])
