@@ -7,12 +7,12 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"runtime/debug"
 	"server/platform/util"
+	"sync"
 	"sync/atomic"
 )
 
@@ -20,7 +20,7 @@ import (
 //.\ClientSimulatorWs2.exe -httpaddr= -wsaddr= -mailboxs= -clients= -baseTest= -deltaClients= -deltaTime= -interval= -timeout=
 
 //HTTPAddr HTTP请求token地址
-var httpaddr = flag.String("httpaddr", "192.168.2.214", "")
+var httpaddr = flag.String("httpaddr", "192.168.2.20", "")
 
 //wsaddr Websocket登陆地址
 var wsaddr = flag.String("wsaddr", "192.168.2.211:10000", "")
@@ -28,14 +28,17 @@ var wsaddr = flag.String("wsaddr", "192.168.2.211:10000", "")
 //numMailbox 单进程邮槽数，最好等于clients 5000
 var numMailbox = flag.Int("mailboxs", 1, "")
 
-//numClient 单进程客户端并发数
-var numClient = flag.Int("numClients", 2000, "")
+//numClient 单进程客户端登陆并发数
+var numClient = flag.Int("numClients", 1000, "")
 
-//totalClient 单进程客户端总数量
-var totalClient = flag.Int("totalClients", 50000, "")
+//totalClient 单进程客户端登陆总数量
+var totalClient = flag.Int("totalClients", 10000, "")
+
+//numClients2 单进程客户端进房间并发数
+var numClients2 = flag.Int("numClients2", 100, "")
 
 //BaseAccount 测试起始账号
-var baseAccount = flag.Int64("baseTest", 6000000, "")
+var baseAccount = flag.Int64("baseTest", 9000000, "")
 
 //deltaClients 间隔连接数检查时间戳
 var deltaClients = flag.Int("deltaClients", 500, "")
@@ -50,10 +53,10 @@ var heartbeat = flag.Int("interval", 5000, "")
 var timeout = flag.Int("timeout", 30000, "")
 
 //subGameID 测试子游戏，游戏类型
-var subGameID = flag.Int("gameID", 210, "")
+var subGameID = flag.Int("gameID", 900, "")
 
 //subRoomID 测试子游戏，房间号
-var subRoomID = flag.Int("roomID", 2101, "")
+var subRoomID = flag.Int("roomID", 9001, "")
 
 //tokenprefix 测试token，免http登陆
 var tokenprefix = flag.String("prefix", "test_new2_", "")
@@ -68,6 +71,18 @@ var curConn int64
 
 //timenow 当前时间戳
 var timenow Timestamp
+
+//
+const (
+	StepNil = iota
+	StepLogin
+	StepEnter
+)
+
+var gStep = StepNil
+
+//gSemLogin 登陆并发访问控制
+var gSemLogin *util.Semaphore
 
 //onInput 输入命令行参数 'q'退出 'c'清屏
 func onInput(str string) int {
@@ -85,56 +100,64 @@ func onInput(str string) int {
 			cmd.Run()
 			return 0
 		}
-	case "--help":
+	case "s":
 		{
-			return 0
+			if StepLogin == gStep &&
+				atomic.LoadInt64(&gClients) >= int64(*totalClient) {
+				gStep = StepEnter
+				x = 0
+				*totalClient = int(gClientsSucc)
+				gClients = 0
+				gClientsSucc = 0
+				gClientsFailed = 0
+				elapsed = 0
+				//发起并发进房间请求
+				ParallEnterRoomRequest()
+			} else {
+				if StepNil == gStep {
+					gStep = StepLogin
+					//发起并发连接/登陆请求
+					ParallLoginRequest()
+				}
+			}
 		}
 	}
 	return 0
 }
 
-//
+//gClients 登陆总数
 var gClients = int64(0)
 
-//
-var ix = int64(0)
-var j int
+//gClientsSucc 登陆成功总数
+var gClientsSucc = int64(0)
 
-//StartParallRequest 发起并发连接/登陆请求
-func StartParallRequest(c int64) {
-	log.Printf("StartParallRequest %d c = %d...", atomic.AddInt64(&ix, 1), c)
-	go func() {
-		//起始时间戳
-		timestart = TimeNowMilliSec()
-		timestart2 = timestart
-		for i := 0; i < *numClient; i++ {
-			//HTTP请求token
-			// token, err := HTTPGetToken(*httpaddr, *baseAccount+int64(i))
-			// if token == "" || err != nil {
-			// 	continue
-			// }
-			//当前时间戳
-			//timenow = TimeNowMilliSec()
-			// timdiff := TimeDiff(timenow, timestart)
-			// if timdiff >= int32(*deltaTime) {
-			// 	timestart = timenow
-			// 	c := gSessMgr.Count()
-			// 	delteConn := c - curConn
-			// 	curConn = c
-			// 	log.Printf("--- *** detla = %dms deltaClients = %03d", timdiff, delteConn)
-			// }
-			//websocket客户端
-			client := NewDefWSClient()
-			token := *tokenprefix + fmt.Sprintf("%d", *tokenstart+j)
-			client.(*DefWSClient).Token = token
-			client.(*DefWSClient).Account = *baseAccount + int64(j)
-			j++
-			//连接游戏大厅
-			client.ConnectTCP(*wsaddr)
-		}
-		t3 := TimeNowMilliSec()
-		log.Printf("--- *** PID[%07d] clients = Succ[%03d] elapsed = %dms\n", os.Getpid(), gSessMgr.Count(), TimeDiff(t3, timestart))
-	}()
+//gClientsFailed 登陆失败总数
+var gClientsFailed = int64(0)
+
+//gSuccPeers 登陆成功会话
+var gSuccPeers = []int64{}
+var gL = &sync.Mutex{}
+var elapsed int32
+var gEnters = int64(0)
+var gEntersSucc = int64(0)
+var gEntersFailed = int64(0)
+
+//
+func AddSuccPeer(sesID int64) {
+	gL.Lock()
+	gSuccPeers = append(gSuccPeers, sesID)
+	gL.Unlock()
+}
+
+//
+func PopPeer() (id int64) {
+	gL.Lock()
+	if len(gSuccPeers) > 0 {
+		id = gSuccPeers[0]
+		gSuccPeers = gSuccPeers[1:]
+	}
+	gL.Unlock()
+	return
 }
 
 //
@@ -154,9 +177,9 @@ func main() {
 	gMailbox.Start(smain, *numMailbox, (*timeout)/1000+10)
 	t2 := TimeNowMilliSec()
 	log.Printf("--- *** PID[%07d] gMailbox.Start = [%03d] elapsed = %dms\n", os.Getpid(), *numMailbox, TimeDiff(t2, t1))
-	//发起并发连接/登陆请求
-	StartParallRequest(int64(0))
-	//控制台命令行输入 按'q'退出 'c'清屏
+	//登陆并发访问控制
+	gSemLogin = util.NewSemaphore(int64(*numClient))
+	//控制台命令行输入 按'q'退出 'c'清屏q
 	util.ReadConsole(onInput)
 	gSessMgr.Wait()
 	gMailbox.Wait()

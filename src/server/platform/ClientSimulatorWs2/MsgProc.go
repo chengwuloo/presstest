@@ -54,8 +54,11 @@ func (s *MsgProc) Sched(size int, cb func(int)) MsgProcCell {
 
 //
 func (s *MsgProc) run(size int, cb func(int)) {
+	//time.Sleep(time.Second * 5)
 	s.cell = newDefMsgProcCell(s.creator, size)
+	//s.l.Lock()
 	s.c.Signal()
+	//s.l.Unlock()
 	cb(Enter)
 	s.cell.Run()
 	atomic.StoreInt32(&s.sta, Idle)

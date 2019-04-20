@@ -102,6 +102,8 @@ func (s *Player) resultPlayerLogin(msg interface{}, peer Session) {
 		log.Fatalln("resultPlayerLogin ", ok)
 	}
 	if rspdata.RetCode == 0 {
+		atomic.AddInt64(&gClientsSucc, 1)
+		AddSuccPeer(peer.ID())
 		client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 		//登陆成功，保存用户数据
 		client.UserID = rspdata.UserId
@@ -115,23 +117,29 @@ func (s *Player) resultPlayerLogin(msg interface{}, peer Session) {
 		//登陆成功，间隔发送心跳包
 		client.HeartID = s.entry.RunAfter(int32(*heartbeat), client)
 		//游戏类型和房间都有效，则进入房间
-		p, ok := GGames.Exist(int32(*subGameID))
-		if 0 != *subGameID && 0 != *subRoomID && ok && p.Exist(int32(*subRoomID)) {
-			//登陆成功，获取游戏列表
-			//reqGameListInfo(peer)
-		}
+		// p, ok := GGames.Exist(int32(*subGameID))
+		// if 0 != *subGameID && 0 != *subRoomID && ok && p.Exist(int32(*subRoomID)) {
+		// 	//登陆成功，获取游戏列表
+		// 	reqGameListInfo(peer)
+		// }
 	} else {
+		atomic.AddInt64(&gClientsFailed, 1)
 		util.Logy("UserClient", "Player", "resultPlayerLogin", rspdata)
 		//失败关闭
 		//peer.Close()
 	}
 	c := atomic.AddInt64(&gClients, 1)
 	if c%int64(*numClient) == 0 {
+		t := TimeNowMilliSec()
+		d := TimeDiff(t, timestart)
+		elapsed += d
 		if c >= int64(*totalClient) {
-			return
+			log.Printf("--- *** PID[%07d] resultPlayerLogin[%03d][%03d][%03d] elapsed:%dms All:%dms\n", os.Getpid(), gClients, gClientsSucc, gClientsFailed, d, elapsed)
+		} else {
+			log.Printf("--- *** PID[%07d] resultPlayerLogin[%03d][%03d][%03d] elapsed:%dms\n", os.Getpid(), gClients, gClientsSucc, gClientsFailed, d)
 		}
-		StartParallRequest(c)
 	}
+	gSemLogin.Leave()
 }
 
 //
@@ -165,7 +173,7 @@ func (s *Player) resultGameListInfo(msg interface{}, peer Session) {
 	// 	GGames.ByName["龙虎斗"].ByName["初级房"])
 	//*subGameID = GGames.ByName["红黑大战"].ID
 	//*subRoomID = GGames.ByName["红黑大战"].ByName["体验房"]
-	//reqGameserverInfo(peer, int32(*subGameID), int32(*subRoomID))
+	reqGameserverInfo(peer, int32(*subGameID), int32(*subRoomID))
 }
 
 //resultGameserverInfo 服务端返回 - 获取游戏IP
@@ -194,9 +202,11 @@ func (s *Player) resultPlayerEnterRoom(msg interface{}, peer Session) {
 	}
 	util.Log("UserClient", "Player", "resultPlayerEnterRoom", rspdata)
 	if rspdata.RetCode == 0 {
+		atomic.AddInt64(&gClientsSucc, 1)
 		//玩家就绪
-		reqPlayerReady(peer)
+		//reqPlayerReady(peer)
 	} else {
+		atomic.AddInt64(&gClientsFailed, 1)
 		client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 		//进入房间失败///////////////////////////////////
 		log.Printf("--- *** PID[%07d] player[%d:%d:%s] :: resultPlayerEnterRoom 进入房间失败 !!!!!!!!!!!!!! \n%v\n %v\n",
@@ -205,6 +215,18 @@ func (s *Player) resultPlayerEnterRoom(msg interface{}, peer Session) {
 			client.Account,
 			client.Token,
 			reflect.TypeOf(rspdata).Elem(), util.JSON2Str(rspdata))
+	}
+	c := atomic.AddInt64(&gClients, 1)
+	if c%int64(*numClients2) == 0 {
+		t := TimeNowMilliSec()
+		d := TimeDiff(t, timestart)
+		elapsed += d
+		if c >= int64(*totalClient) {
+			log.Printf("--- *** PID[%07d] resultPlayerEnterRoom[%03d][%03d][%03d] elapsed:%dms All:%dms\n", os.Getpid(), gClients, gClientsSucc, gClientsFailed, d, elapsed)
+		} else {
+			log.Printf("--- *** PID[%07d] resultPlayerEnterRoom[%03d][%03d][%03d] elapsed:%dms\n", os.Getpid(), gClients, gClientsSucc, gClientsFailed, d)
+			ParallEnterRoomRequest()
+		}
 	}
 }
 
@@ -512,7 +534,7 @@ func (s *Player) onStartPlaceJettonLonghu(msg interface{}, peer Session) {
 	//用户主动下注 [1,3]
 	//x := rand.Intn(3) + 1
 	//sendPlayerPlaceJetLonghu(peer, int32(x), 100)
-	client.TimerID1 = s.entry.RunAfter(2000, client)
+	//client.TimerID1 = s.entry.RunAfter(2000, client)
 }
 
 //onJettonBroadcastLonghu

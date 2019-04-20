@@ -18,7 +18,75 @@ import (
 	"server/platform/util"
 	"strconv"
 	"strings"
+	"sync/atomic"
 )
+
+//
+var x = int64(0)
+
+//
+var k int
+
+//ParallLoginRequest 发起并发连接/登陆请求
+//-------------------------------------------------------------
+func ParallLoginRequest() {
+	log.Printf("ParallLoginRequest %d ...", atomic.AddInt64(&x, 1))
+	go func() {
+		//起始时间戳
+		timestart = TimeNowMilliSec()
+		//for i := 0; i < *numClient; i++ {
+		for i := 0; i < *totalClient; i++ {
+			gSemLogin.Enter()
+			//HTTP请求token
+			token, err := HTTPGetToken(*httpaddr, *baseAccount+int64(k))
+			if token == "" || err != nil {
+				continue
+			}
+			//当前时间戳
+			//timenow = TimeNowMilliSec()
+			// timdiff := TimeDiff(timenow, timestart)
+			// if timdiff >= int32(*deltaTime) {
+			// 	timestart = timenow
+			// 	c := gSessMgr.Count()
+			// 	delteConn := c - curConn
+			// 	curConn = c
+			// 	log.Printf("--- *** detla = %dms deltaClients = %03d", timdiff, delteConn)
+			// }
+			//websocket客户端
+			client := NewDefWSClient()
+			//token := *tokenprefix + fmt.Sprintf("%d", *tokenstart+k)
+			client.(*DefWSClient).Token = token
+			client.(*DefWSClient).Account = *baseAccount + int64(k)
+			k++
+			//连接游戏大厅
+			client.ConnectTCP(*wsaddr)
+		}
+	}()
+}
+
+//ParallEnterRoomRequest 发起并发进房间请求
+//-------------------------------------------------------------
+func ParallEnterRoomRequest() {
+	log.Printf("ParallEnterRoomRequest %d ...", atomic.AddInt64(&x, 1))
+	go func() {
+		//起始时间戳
+		timestart = TimeNowMilliSec()
+		for i := 0; i < *numClients2; i++ {
+			//游戏类型和房间都有效，则进入房间
+			p, ok := GGames.Exist(int32(*subGameID))
+			if 0 != *subGameID && 0 != *subRoomID && ok && p.Exist(int32(*subRoomID)) {
+				sesID := PopPeer()
+				if sesID > 0 {
+					peer := gSessMgr.Get(sesID)
+					if peer != nil {
+						//登陆成功，获取游戏列表
+						reqGameListInfo(peer)
+					}
+				}
+			}
+		}
+	}()
+}
 
 //
 type HTTPAuthResult struct {
@@ -42,7 +110,7 @@ func HTTPGetToken(httpaddr string, account int64) (token string, e error) {
 		}
 	}()
 	//requrl := fmt.Sprintf("http://%s/GameHandle?testAccount=%d", httpaddr, account)
-	requrl := fmt.Sprintf("http://%s:5698/test1.ashx", httpaddr)
+	requrl := fmt.Sprintf("http://%s?testAccount=%d", httpaddr, account)
 	//log.Printf("--- *** PID[%07d] HTTPGetToken >>> %v", os.Getpid(), requrl)
 	rsp, err := http.Get(requrl)
 	if err != nil {
