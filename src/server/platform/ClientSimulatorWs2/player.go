@@ -139,6 +139,7 @@ func (s *Player) resultPlayerLogin(msg interface{}, peer Session) {
 			log.Printf("--- *** PID[%07d] resultPlayerLogin[%03d][%03d][%03d] elapsed:%dms\n", os.Getpid(), gClients, gClientsSucc, gClientsFailed, d)
 		}
 	}
+	//离开释放资源
 	gSemLogin.Leave()
 }
 
@@ -225,9 +226,10 @@ func (s *Player) resultPlayerEnterRoom(msg interface{}, peer Session) {
 			log.Printf("--- *** PID[%07d] resultPlayerEnterRoom[%03d][%03d][%03d] elapsed:%dms All:%dms\n", os.Getpid(), gClients, gClientsSucc, gClientsFailed, d, elapsed)
 		} else {
 			log.Printf("--- *** PID[%07d] resultPlayerEnterRoom[%03d][%03d][%03d] elapsed:%dms\n", os.Getpid(), gClients, gClientsSucc, gClientsFailed, d)
-			ParallEnterRoomRequest()
 		}
 	}
+	//离开释放资源
+	gSemEnter.Leave()
 }
 
 //onPlayerEnterNotify 服务端返回 - 玩家进入返回

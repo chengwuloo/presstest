@@ -1,5 +1,10 @@
 package util
 
+//
+// Created by YangZhi
+// 			4/9/2019
+//
+
 import "sync"
 
 //Semaphore 信号量互斥访问控制

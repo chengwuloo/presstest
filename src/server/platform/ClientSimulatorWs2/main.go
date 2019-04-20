@@ -28,13 +28,13 @@ var wsaddr = flag.String("wsaddr", "192.168.2.211:10000", "")
 //numMailbox 单进程邮槽数，最好等于clients 5000
 var numMailbox = flag.Int("mailboxs", 1, "")
 
-//numClient 单进程客户端登陆并发数
-var numClient = flag.Int("numClients", 1000, "")
+//numClient 单进程并发客户端登陆数
+var numClient = flag.Int("numClients", 2000, "")
 
-//totalClient 单进程客户端登陆总数量
-var totalClient = flag.Int("totalClients", 10000, "")
+//totalClient 单进程登陆客户端总数
+var totalClient = flag.Int("totalClients", 40000, "")
 
-//numClients2 单进程客户端进房间并发数
+//numClients2 单进程并发进房间客户端数
 var numClients2 = flag.Int("numClients2", 100, "")
 
 //BaseAccount 测试起始账号
@@ -83,6 +83,9 @@ var gStep = StepNil
 
 //gSemLogin 登陆并发访问控制
 var gSemLogin *util.Semaphore
+
+//gSemEnter 进房间并发访问控制
+var gSemEnter *util.Semaphore
 
 //onInput 输入命令行参数 'q'退出 'c'清屏
 func onInput(str string) int {
@@ -179,6 +182,8 @@ func main() {
 	log.Printf("--- *** PID[%07d] gMailbox.Start = [%03d] elapsed = %dms\n", os.Getpid(), *numMailbox, TimeDiff(t2, t1))
 	//登陆并发访问控制
 	gSemLogin = util.NewSemaphore(int64(*numClient))
+	//进房间并发访问控制
+	gSemEnter = util.NewSemaphore(int64(*numClients2))
 	//控制台命令行输入 按'q'退出 'c'清屏q
 	util.ReadConsole(onInput)
 	gSessMgr.Wait()

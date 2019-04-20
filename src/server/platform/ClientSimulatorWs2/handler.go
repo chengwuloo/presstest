@@ -18,27 +18,19 @@ import (
 	"server/platform/util"
 	"strconv"
 	"strings"
-	"sync/atomic"
 )
-
-//
-var x = int64(0)
-
-//
-var k int
 
 //ParallLoginRequest 发起并发连接/登陆请求
 //-------------------------------------------------------------
 func ParallLoginRequest() {
-	log.Printf("ParallLoginRequest %d ...", atomic.AddInt64(&x, 1))
 	go func() {
 		//起始时间戳
 		timestart = TimeNowMilliSec()
-		//for i := 0; i < *numClient; i++ {
 		for i := 0; i < *totalClient; i++ {
+			//进入访问资源
 			gSemLogin.Enter()
 			//HTTP请求token
-			token, err := HTTPGetToken(*httpaddr, *baseAccount+int64(k))
+			token, err := HTTPGetToken(*httpaddr, *baseAccount+int64(i))
 			if token == "" || err != nil {
 				continue
 			}
@@ -54,10 +46,9 @@ func ParallLoginRequest() {
 			// }
 			//websocket客户端
 			client := NewDefWSClient()
-			//token := *tokenprefix + fmt.Sprintf("%d", *tokenstart+k)
+			//token := *tokenprefix + fmt.Sprintf("%d", *tokenstart+i)
 			client.(*DefWSClient).Token = token
-			client.(*DefWSClient).Account = *baseAccount + int64(k)
-			k++
+			client.(*DefWSClient).Account = *baseAccount + int64(i)
 			//连接游戏大厅
 			client.ConnectTCP(*wsaddr)
 		}
@@ -67,11 +58,12 @@ func ParallLoginRequest() {
 //ParallEnterRoomRequest 发起并发进房间请求
 //-------------------------------------------------------------
 func ParallEnterRoomRequest() {
-	log.Printf("ParallEnterRoomRequest %d ...", atomic.AddInt64(&x, 1))
 	go func() {
 		//起始时间戳
 		timestart = TimeNowMilliSec()
-		for i := 0; i < *numClients2; i++ {
+		for i := 0; i < *totalClient; i++ {
+			//进入访问资源
+			gSemEnter.Enter()
 			//游戏类型和房间都有效，则进入房间
 			p, ok := GGames.Exist(int32(*subGameID))
 			if 0 != *subGameID && 0 != *subRoomID && ok && p.Exist(int32(*subRoomID)) {
