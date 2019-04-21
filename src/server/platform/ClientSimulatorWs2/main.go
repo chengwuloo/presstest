@@ -26,16 +26,19 @@ var httpaddr = flag.String("httpaddr", "192.168.2.20", "")
 var wsaddr = flag.String("wsaddr", "192.168.2.211:10000", "")
 
 //numMailbox 单进程邮槽数，最好等于clients 5000
-var numMailbox = flag.Int("mailboxs", 1, "")
-
-//numClient 单进程并发客户端登陆数
-var numClient = flag.Int("numClients", 2000, "")
+var numMailbox = flag.Int("mailboxs", 100, "")
 
 //totalClient 单进程登陆客户端总数
-var totalClient = flag.Int("totalClients", 40000, "")
+var totalClient = flag.Int("totalClients", 5000, "")
 
-//numClients2 单进程并发进房间客户端数
+//numClient 单进程并发客户端登陆数<并发控制>
+var numClient = flag.Int("numClients", 1000, "")
+
+//numClients2 单进程并发进房间客户端数<并发控制>
 var numClients2 = flag.Int("numClients2", 100, "")
+
+//numClients2 单进程并发投注客户端数<并发控制>
+var numClients3 = flag.Int("numClients3", 2000, "")
 
 //BaseAccount 测试起始账号
 var baseAccount = flag.Int64("baseTest", 9000000, "")
@@ -49,7 +52,7 @@ var deltaTime = flag.Int("deltaTime", 8000, "")
 //heartbeat 心跳间隔毫秒数
 var heartbeat = flag.Int("interval", 5000, "")
 
-//timeout 心跳超时清理毫秒数 timeout>interval
+//timeout 心跳超时清理毫秒数 timeout>intervalgo b
 var timeout = flag.Int("timeout", 30000, "")
 
 //subGameID 测试子游戏，游戏类型
@@ -60,7 +63,7 @@ var subRoomID = flag.Int("roomID", 9001, "")
 
 //tokenprefix 测试token，免http登陆
 var tokenprefix = flag.String("prefix", "test_new2_", "")
-var tokenstart = flag.Int("tokenstart", 0, "")
+var tokenstart = flag.Int("tokenstart", 999, "")
 var tokenend = flag.Int("tokenend", 99999, "")
 
 //timestart 起始时间戳
@@ -87,6 +90,9 @@ var gSemLogin *util.Semaphore
 //gSemEnter 进房间并发访问控制
 var gSemEnter *util.Semaphore
 
+//gSemJetton 投注并发访问控制
+var gSemJetton *util.FreeSemaphore
+
 //onInput 输入命令行参数 'q'退出 'c'清屏
 func onInput(str string) int {
 	switch str {
@@ -108,7 +114,6 @@ func onInput(str string) int {
 			if StepLogin == gStep &&
 				atomic.LoadInt64(&gClients) >= int64(*totalClient) {
 				gStep = StepEnter
-				x = 0
 				*totalClient = int(gClientsSucc)
 				gClients = 0
 				gClientsSucc = 0
@@ -184,9 +189,11 @@ func main() {
 	gSemLogin = util.NewSemaphore(int64(*numClient))
 	//进房间并发访问控制
 	gSemEnter = util.NewSemaphore(int64(*numClients2))
+	//投注并发访问控制
+	gSemJetton = util.NewFreeSemaphore(int64(*numClients3))
 	//控制台命令行输入 按'q'退出 'c'清屏q
 	util.ReadConsole(onInput)
-	gSessMgr.Wait()
 	gMailbox.Wait()
+	gSessMgr.Wait()
 	log.Printf("--- *** PID[%07d] exit...", os.Getpid())
 }

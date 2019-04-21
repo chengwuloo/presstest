@@ -39,6 +39,16 @@ const (
 
 //
 func init() {
+	cellnet.RegisterMessageMeta(&cellnet.MessageMeta{
+		Codec: codec.MustGetCodec("gogopb"),
+		Type:  reflect.TypeOf((*HallServer.GetPlayingGameInfoMessage)(nil)).Elem(),
+		ID:    ENWORD(1, 9),
+	})
+	cellnet.RegisterMessageMeta(&cellnet.MessageMeta{
+		Codec: codec.MustGetCodec("gogopb"),
+		Type:  reflect.TypeOf((*HallServer.GetPlayingGameInfoMessageResponse)(nil)).Elem(),
+		ID:    ENWORD(1, 10),
+	})
 	//心跳 - 请求
 	cellnet.RegisterMessageMeta(&cellnet.MessageMeta{
 		Codec: codec.MustGetCodec("gogopb"),

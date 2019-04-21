@@ -44,7 +44,7 @@ func (s *Player) randPlaceJet(peer Session) {
 		{
 			//用户主动下注 [1,3]
 			x := rand.Intn(3) + 1
-			sendPlayerPlaceJetLonghu(peer, int32(x), 100)
+			sendPlayerPlaceJetLonghu(peer, int32(x), 2000)
 		}
 	case GGames.ByName["百人牛牛"].ID:
 		{
@@ -87,6 +87,8 @@ func (s *Player) OnTimer(timerID uint32, dt int32, args interface{}) bool {
 			}
 			if client.TimerID1 == timerID {
 				s.randPlaceJet(peer)
+				//离开释放资源
+				//gSemJetton.Leave()
 				return false
 			}
 		}
@@ -132,6 +134,7 @@ func (s *Player) resultPlayerLogin(msg interface{}, peer Session) {
 	if c%int64(*numClient) == 0 {
 		t := TimeNowMilliSec()
 		d := TimeDiff(t, timestart)
+		timestart = t
 		elapsed += d
 		if c >= int64(*totalClient) {
 			log.Printf("--- *** PID[%07d] resultPlayerLogin[%03d][%03d][%03d] elapsed:%dms All:%dms\n", os.Getpid(), gClients, gClientsSucc, gClientsFailed, d, elapsed)
@@ -150,7 +153,7 @@ func (s *Player) resultKeepAlive(msg interface{}, peer Session) {
 	s.i++
 	//if s.i%10 == 0 {
 	//rspdata := msg.(*Game_Common.KeepAliveMessageResponse)
-	//util.Log("UserClient", "Player", "resultKeepAlive", rspdata)
+	//util.Logy("UserClient", "Player", "resultKeepAlive", rspdata)
 	//}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	if client != nil {
@@ -205,7 +208,7 @@ func (s *Player) resultPlayerEnterRoom(msg interface{}, peer Session) {
 	if rspdata.RetCode == 0 {
 		atomic.AddInt64(&gClientsSucc, 1)
 		//玩家就绪
-		//reqPlayerReady(peer)
+		reqPlayerReady(peer)
 	} else {
 		atomic.AddInt64(&gClientsFailed, 1)
 		client := peer.GetCtx(TagUserInfo).(*DefWSClient)
@@ -221,6 +224,7 @@ func (s *Player) resultPlayerEnterRoom(msg interface{}, peer Session) {
 	if c%int64(*numClients2) == 0 {
 		t := TimeNowMilliSec()
 		d := TimeDiff(t, timestart)
+		timestart = t
 		elapsed += d
 		if c >= int64(*totalClient) {
 			log.Printf("--- *** PID[%07d] resultPlayerEnterRoom[%03d][%03d][%03d] elapsed:%dms All:%dms\n", os.Getpid(), gClients, gClientsSucc, gClientsFailed, d, elapsed)
@@ -471,6 +475,15 @@ func (s *Player) onPlaceJetSuccessLonghu(msg interface{}, peer Session) {
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onPlaceJetSuccessLonghu", rspdata)
+	//下注成功///////////////////////////////////
+	// log.Printf("--- *** PID[%07d] player[%d:%d:%s] :: onPlaceJetSuccessLonghu \n%v\n %v\n",
+	// 	os.Getpid(),
+	// 	client.UserID,
+	// 	client.Account,
+	// 	client.Token,
+	// 	reflect.TypeOf(rspdata).Elem(), util.JSON2Str(rspdata))
+	//离开释放资源
+	gSemJetton.Leave()
 }
 
 //onGameEndLonghu 当局游戏结束
@@ -511,6 +524,8 @@ func (s *Player) onPlaceJettonFailLonghu(msg interface{}, peer Session) {
 		client.Account,
 		client.Token,
 		reflect.TypeOf(rspdata).Elem(), util.JSON2Str(rspdata))
+	//离开释放资源
+	gSemJetton.Leave()
 }
 
 //onQueryPlayerListLonghu 玩家在线列表返回
@@ -533,10 +548,19 @@ func (s *Player) onStartPlaceJettonLonghu(msg interface{}, peer Session) {
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onStartPlaceJettonLonghu", rspdata)
-	//用户主动下注 [1,3]
-	//x := rand.Intn(3) + 1
-	//sendPlayerPlaceJetLonghu(peer, int32(x), 100)
-	//client.TimerID1 = s.entry.RunAfter(2000, client)
+	//进入访问资源
+	if gSemJetton.Enter() {
+		//用户主动下注 [1,3]
+		//x := rand.Intn(3) + 1
+		//sendPlayerPlaceJetLonghu(peer, int32(x), 100)
+		client.TimerID1 = s.entry.RunAfter(2000, client)
+	} else {
+		s.entry.GetCell().Append(func() {
+			if gSemJetton.Enter() {
+				client.TimerID1 = s.entry.RunAfter(2000, client)
+			}
+		})
+	}
 }
 
 //onJettonBroadcastLonghu

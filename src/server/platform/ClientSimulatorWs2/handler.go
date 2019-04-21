@@ -30,10 +30,10 @@ func ParallLoginRequest() {
 			//进入访问资源
 			gSemLogin.Enter()
 			//HTTP请求token
-			token, err := HTTPGetToken(*httpaddr, *baseAccount+int64(i))
-			if token == "" || err != nil {
-				continue
-			}
+			// token, err := HTTPGetToken(*httpaddr, *baseAccount+int64(i))
+			// if token == "" || err != nil {
+			// 	continue
+			// }
 			//当前时间戳
 			//timenow = TimeNowMilliSec()
 			// timdiff := TimeDiff(timenow, timestart)
@@ -46,7 +46,7 @@ func ParallLoginRequest() {
 			// }
 			//websocket客户端
 			client := NewDefWSClient()
-			//token := *tokenprefix + fmt.Sprintf("%d", *tokenstart+i)
+			token := *tokenprefix + fmt.Sprintf("%d", *tokenstart+i)
 			client.(*DefWSClient).Token = token
 			client.(*DefWSClient).Account = *baseAccount + int64(i)
 			//连接游戏大厅

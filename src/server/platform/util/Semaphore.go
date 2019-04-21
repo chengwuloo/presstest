@@ -55,3 +55,36 @@ func (s *Semaphore) wait() {
 	}
 	s.l.Unlock()
 }
+
+//FreeSemaphore 信号量互斥访问控制
+type FreeSemaphore struct {
+	l        *sync.Mutex
+	avail    int64
+	initsize int64
+}
+
+//NewFreeSemaphore 初始化initsize个并发访问资源
+func NewFreeSemaphore(initsize int64) *FreeSemaphore {
+	s := &FreeSemaphore{initsize: initsize, avail: initsize, l: &sync.Mutex{}}
+	return s
+}
+
+//Enter 进入访问资源
+func (s *FreeSemaphore) Enter() (bv bool) {
+	s.l.Lock()
+	if s.avail > 0 {
+		s.avail--
+		bv = true
+	}
+	s.l.Unlock()
+	return
+}
+
+//Leave 离开释放资源
+func (s *FreeSemaphore) Leave() {
+	s.l.Lock()
+	if s.avail < s.initsize {
+		s.avail++
+	}
+	s.l.Unlock()
+}
