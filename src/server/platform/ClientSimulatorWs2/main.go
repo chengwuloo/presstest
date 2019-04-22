@@ -56,10 +56,10 @@ var heartbeat = flag.Int("interval", 5000, "")
 var timeout = flag.Int("timeout", 30000, "")
 
 //subGameID 测试子游戏，游戏类型
-var subGameID = flag.Int("gameID", 900, "")
+var subGameID = flag.Int("gameID", 930, "")
 
 //subRoomID 测试子游戏，房间号
-var subRoomID = flag.Int("roomID", 9001, "")
+var subRoomID = flag.Int("roomID", 9301, "")
 
 //tokenprefix 测试token，免http登陆
 var tokenprefix = flag.String("prefix", "test_new2_", "")
@@ -170,6 +170,8 @@ func PopPeer() (id int64) {
 
 //
 func main() {
+	// util.TestSemaphore()
+	// util.ReadConsole(util.OnInputTestSemaphore)
 	defer func() {
 		if r := recover(); r != nil {
 			log.Println(debug.Stack())

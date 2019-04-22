@@ -88,3 +88,38 @@ func (s *FreeSemaphore) Leave() {
 	}
 	s.l.Unlock()
 }
+
+//
+var gSem = NewSemaphore(10)
+var ix = 10
+
+//
+func TestSemaphore() {
+
+	for i := 0; i < 100; i++ {
+		go func() {
+
+			for {
+				gSem.Enter()
+				ix--
+				println("======= ", ix)
+				ix++
+				gSem.Leave()
+			}
+		}()
+	}
+}
+
+//
+func OnInputTestSemaphore(str string) int {
+	switch str {
+	case "w":
+		{
+			for i := 0; i < 30; i++ {
+				gSem.Leave()
+			}
+			return 0
+		}
+	}
+	return 0
+}
