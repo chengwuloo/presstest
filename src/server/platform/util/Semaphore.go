@@ -42,7 +42,9 @@ func (s *Semaphore) Leave() {
 	s.w.Lock()
 	if s.avail < s.initsize {
 		s.avail++
-		s.c.Signal()
+		if s.avail == 1 {
+			s.c.Signal()
+		}
 	}
 	s.w.Unlock()
 }

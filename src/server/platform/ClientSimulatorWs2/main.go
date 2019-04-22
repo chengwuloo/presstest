@@ -170,8 +170,8 @@ func PopPeer() (id int64) {
 
 //
 func main() {
-	// util.TestSemaphore()
-	// util.ReadConsole(util.OnInputTestSemaphore)
+	util.TestSemaphore()
+	util.ReadConsole(util.OnInputTestSemaphore)
 	defer func() {
 		if r := recover(); r != nil {
 			log.Println(debug.Stack())
