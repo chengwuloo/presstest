@@ -26,7 +26,7 @@ func ParallLoginRequest() {
 	go func() {
 		//起始时间戳
 		timestart = TimeNowMilliSec()
-		for i := 0; i < *totalClient; i++ {
+		for i := 0; i < *totalClients; i++ {
 			//进入访问资源
 			gSemLogin.Enter()
 			//HTTP请求token
@@ -61,7 +61,7 @@ func ParallEnterRoomRequest() {
 	go func() {
 		//起始时间戳
 		timestart = TimeNowMilliSec()
-		for i := 0; i < *totalClient; i++ {
+		for i := 0; i < *totalClients; i++ {
 			//进入访问资源
 			gSemEnter.Enter()
 			//游戏类型和房间都有效，则进入房间

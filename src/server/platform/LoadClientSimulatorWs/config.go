@@ -12,7 +12,10 @@ type iniConfig struct {
 	httpaddr     string
 	wsaddr       string
 	numMailbox   int
-	numClient    int
+	totalClients int
+	numClients   int
+	numClients2  int
+	numClients3  int
 	baseAccount  int64
 	deltaClients int
 	deltaTime    int
@@ -38,7 +41,10 @@ func readini(filename string) (c *iniConfig) {
 	c.httpaddr = ini.GetString("httpaddr", "httpaddr")
 	c.wsaddr = ini.GetString("wsaddr", "wsaddr")
 	c.numMailbox = ini.GetInt("mailboxs", "mailboxs")
-	c.numClient = ini.GetInt("clients", "clients")
+	c.totalClients = ini.GetInt("clients", "totalClients")
+	c.numClients = ini.GetInt("clients", "numClients")
+	c.numClients2 = ini.GetInt("clients", "numClients2")
+	c.numClients3 = ini.GetInt("clients", "numClients3")
 	c.baseAccount = ini.GetInt64("baseTest", "baseTest")
 	c.deltaClients = ini.GetInt("deltaClients", "deltaClients")
 	c.deltaTime = ini.GetInt("deltaTime", "deltaTime")

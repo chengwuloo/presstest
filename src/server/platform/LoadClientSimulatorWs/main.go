@@ -28,8 +28,17 @@ var wsaddr = flag.String("wsaddr", "192.168.2.75:10000", "")
 //numMailbox 单进程邮槽数，最好等于clients 5000
 var numMailbox = flag.Int("mailboxs", 5000, "")
 
-//numClient 单进程客户端数 5000
-var numClient = flag.Int("clients", 5000, "")
+//totalClients 单进程登陆客户端总数
+var totalClients = flag.Int("totalClients", 5000, "")
+
+//numClients 单进程并发登陆客户端数<并发登陆>
+var numClients = flag.Int("numClients", 1000, "")
+
+//numClients2 单进程并发进房间客户端数<并发进房间>
+var numClients2 = flag.Int("numClients2", 100, "")
+
+//numClients3 单进程并发投注客户端数<并发投注>
+var numClients3 = flag.Int("numClients3", 2000, "")
 
 //BaseAccount 测试起始账号
 var baseAccount = flag.Int64("baseTest", 12345, "")
@@ -141,7 +150,10 @@ func loadConf() bool {
 		*httpaddr = c.httpaddr
 		*wsaddr = c.wsaddr
 		*numMailbox = c.numMailbox
-		*numClient = c.numClient
+		*totalClients = c.totalClients
+		*numClients = c.numClients
+		*numClients2 = c.numClients2
+		*numClients3 = c.numClients3
 		*baseAccount = c.baseAccount
 		*deltaClients = c.deltaClients
 		*deltaTime = c.deltaTime
@@ -184,10 +196,10 @@ func main() {
 	}()
 	//启动客户端进程数*children
 	for i := 0; i < *children; i++ {
-		cmdLine := fmt.Sprintf("%s -httpaddr=%s -wsaddr=%s -mailboxs=%d -clients=%d -baseTest=%d -deltaClients=%d -deltaTime=%d -interval=%d -timeout=%d -gameID=%d -roomID=%d -prefix=%s -tokenstart=%d -tokenend=%d",
+		cmdLine := fmt.Sprintf("%s -httpaddr=%s -wsaddr=%s -mailboxs=%d -totalClients=%d -numClients=%d -numClients2=%d -numClients3=%d -baseTest=%d -deltaClients=%d -deltaTime=%d -interval=%d -timeout=%d -gameID=%d -roomID=%d -prefix=%s -tokenstart=%d -tokenend=%d",
 			execStr,
-			*httpaddr, *wsaddr, *numMailbox, *numClient, *baseAccount+int64(*numClient)*int64(i), *deltaClients, *deltaTime, *heartbeat, *timeout, *subGameID, *subRoomID,
-			*tokenprefix, *tokenstart+int(*numClient)*int(i), *tokenend)
+			*httpaddr, *wsaddr, *numMailbox, *totalClients, *numClients, *numClients2, *numClients3, *baseAccount+int64(*totalClients)*int64(i), *deltaClients, *deltaTime, *heartbeat, *timeout, *subGameID, *subRoomID,
+			*tokenprefix, *tokenstart+int(*totalClients)*int(i), *tokenend)
 		args := strings.Split(cmdLine, " ")
 		attr := &os.ProcAttr{
 			Files: []*os.File{os.Stdin, os.Stdout, os.Stderr},

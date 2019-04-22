@@ -131,12 +131,12 @@ func (s *Player) resultPlayerLogin(msg interface{}, peer Session) {
 		//peer.Close()
 	}
 	c := atomic.AddInt64(&gClients, 1)
-	if c%int64(*numClient) == 0 {
+	if c%int64(*numClients) == 0 {
 		t := TimeNowMilliSec()
 		d := TimeDiff(t, timestart)
 		timestart = t
 		elapsed += d
-		if c >= int64(*totalClient) {
+		if c >= int64(*totalClients) {
 			log.Printf("--- *** PID[%07d] resultPlayerLogin[%03d][%03d][%03d] elapsed:%dms All:%dms\n", os.Getpid(), gClients, gClientsSucc, gClientsFailed, d, elapsed)
 		} else {
 			log.Printf("--- *** PID[%07d] resultPlayerLogin[%03d][%03d][%03d] elapsed:%dms\n", os.Getpid(), gClients, gClientsSucc, gClientsFailed, d)
@@ -226,7 +226,7 @@ func (s *Player) resultPlayerEnterRoom(msg interface{}, peer Session) {
 		d := TimeDiff(t, timestart)
 		timestart = t
 		elapsed += d
-		if c >= int64(*totalClient) {
+		if c >= int64(*totalClients) {
 			log.Printf("--- *** PID[%07d] resultPlayerEnterRoom[%03d][%03d][%03d] elapsed:%dms All:%dms\n", os.Getpid(), gClients, gClientsSucc, gClientsFailed, d, elapsed)
 		} else {
 			log.Printf("--- *** PID[%07d] resultPlayerEnterRoom[%03d][%03d][%03d] elapsed:%dms\n", os.Getpid(), gClients, gClientsSucc, gClientsFailed, d)
