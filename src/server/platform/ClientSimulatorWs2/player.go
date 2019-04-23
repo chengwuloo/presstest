@@ -38,7 +38,7 @@ func (s *Player) randPlaceJet(peer Session) {
 		{
 			//用户主动下注 [1,3]
 			x := rand.Intn(3) + 1
-			sendPlayerPlaceJetErBaGang(peer, int32(x), 100)
+			sendPlayerPlaceJetErBaGang(peer, int32(x), 1000)
 		}
 	case GGames.ByName["龙虎斗"].ID:
 		{
@@ -360,6 +360,15 @@ func (s *Player) onPlaceJetSuccessErBaGang(msg interface{}, peer Session) {
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onPlaceJetSuccessErBaGang", rspdata)
+	//下注成功///////////////////////////////////
+	// log.Printf("--- *** PID[%07d] player[%d:%d:%s] :: onPlaceJetSuccessErBaGang \n%v\n %v\n",
+	// 	os.Getpid(),
+	// 	client.UserID,
+	// 	client.Account,
+	// 	client.Token,
+	// 	reflect.TypeOf(rspdata).Elem(), util.JSON2Str(rspdata))
+	//离开释放资源
+	gSemJetton.Leave()
 }
 
 //onPlaceJettonFailErBaGang 下注失败
@@ -378,6 +387,8 @@ func (s *Player) onPlaceJettonFailErBaGang(msg interface{}, peer Session) {
 		client.Account,
 		client.Token,
 		reflect.TypeOf(rspdata).Elem(), util.JSON2Str(rspdata))
+	//离开释放资源
+	gSemJetton.Leave()
 }
 
 //onGameJettonErBaGang 开始下注
@@ -389,10 +400,19 @@ func (s *Player) onGameJettonErBaGang(msg interface{}, peer Session) {
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onGameJettonErBaGang", rspdata)
-	//用户主动下注 [1,3]
-	//x := rand.Intn(3) + 1
-	//sendPlayerPlaceJetErBaGang(peer, int32(x), 100)
-	client.TimerID1 = s.entry.RunAfter(2000, client)
+	//进入访问资源
+	if gSemJetton.Enter() {
+		//用户主动下注 [1,3]
+		//x := rand.Intn(3) + 1
+		//sendPlayerPlaceJetErBaGang(peer, int32(x), 100)
+		client.TimerID1 = s.entry.RunAfter(2000, client)
+	} else {
+		s.entry.GetCell().Append(func() {
+			if gSemJetton.Enter() {
+				client.TimerID1 = s.entry.RunAfter(2000, client)
+			}
+		})
+	}
 }
 
 //
@@ -626,6 +646,8 @@ func (s *Player) onPlaceJetSuccessBrnn(msg interface{}, peer Session) {
 	// 	client.UserID,
 	// 	client.Account,
 	// 	client.Token)
+	//离开释放资源
+	gSemJetton.Leave()
 }
 
 //onGameEndBrnn 服务端返回 - 当局游戏结束
@@ -666,6 +688,8 @@ func (s *Player) onPlaceJettonFailBrnn(msg interface{}, peer Session) {
 		client.Account,
 		client.Token,
 		reflect.TypeOf(rspdata).Elem(), util.JSON2Str(rspdata))
+	//离开释放资源
+	gSemJetton.Leave()
 }
 
 //onPlayerListBrnn 服务端返回 - 玩家在线列表返回
@@ -688,10 +712,19 @@ func (s *Player) onStartJettonBrnn(msg interface{}, peer Session) {
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onStartJettonBrnn", rspdata)
-	//用户主动下注 [0,5]
-	//x := rand.Intn(6)
-	//sendPlayerPlaceJetBrnn(peer, int32(x), 100)
-	client.TimerID1 = s.entry.RunAfter(2000, client)
+	//进入访问资源
+	if gSemJetton.Enter() {
+		//用户主动下注 [0,5]
+		//x := rand.Intn(6)
+		//sendPlayerPlaceJetBrnn(peer, int32(x), 100)
+		client.TimerID1 = s.entry.RunAfter(2000, client)
+	} else {
+		s.entry.GetCell().Append(func() {
+			if gSemJetton.Enter() {
+				client.TimerID1 = s.entry.RunAfter(2000, client)
+			}
+		})
+	}
 }
 
 //onJettonBroadcastBrnn 服务端返回
@@ -746,6 +779,8 @@ func (s *Player) onPlaceJetSuccessHongHei(msg interface{}, peer Session) {
 	// 	client.UserID,
 	// 	client.Account,
 	// 	client.Token)
+	//离开释放资源
+	gSemJetton.Leave()
 }
 
 //onGameEndHongHei 服务端返回 - 当局游戏结束
@@ -786,6 +821,8 @@ func (s *Player) onPlaceJettonFailHongHei(msg interface{}, peer Session) {
 		client.Account,
 		client.Token,
 		reflect.TypeOf(rspdata).Elem(), util.JSON2Str(rspdata))
+	//离开释放资源
+	gSemJetton.Leave()
 }
 
 //onPlayerListHongHei 服务端返回 - 玩家在线列表返回
@@ -808,10 +845,19 @@ func (s *Player) onStartJettonHongHei(msg interface{}, peer Session) {
 	}
 	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onStartJettonHongHei", rspdata)
-	//用户主动下注 [0,2]
-	//x := rand.Intn(3)
-	//sendPlayerPlaceJetHongHei(peer, int32(x), 100)
-	client.TimerID1 = s.entry.RunAfter(2000, client)
+	//进入访问资源
+	if gSemJetton.Enter() {
+		//用户主动下注 [0,2]
+		//x := rand.Intn(3)
+		//sendPlayerPlaceJetHongHei(peer, int32(x), 100)
+		client.TimerID1 = s.entry.RunAfter(2000, client)
+	} else {
+		s.entry.GetCell().Append(func() {
+			if gSemJetton.Enter() {
+				client.TimerID1 = s.entry.RunAfter(2000, client)
+			}
+		})
+	}
 }
 
 //onJettonBroadcastHongHei 服务端返回

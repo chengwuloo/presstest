@@ -29,10 +29,10 @@ var wsaddr = flag.String("wsaddr", "192.168.2.211:10000", "")
 var numMailbox = flag.Int("mailboxs", 100, "")
 
 //totalClient 单进程登陆客户端总数
-var totalClients = flag.Int("totalClients", 5000, "")
+var totalClients = flag.Int("totalClients", 100, "")
 
 //numClients 单进程并发登陆客户端数<并发登陆>
-var numClients = flag.Int("numClients", 1000, "")
+var numClients = flag.Int("numClients", 100, "")
 
 //numClients2 单进程并发进房间客户端数<并发进房间>
 var numClients2 = flag.Int("numClients2", 100, "")
@@ -56,14 +56,14 @@ var heartbeat = flag.Int("interval", 5000, "")
 var timeout = flag.Int("timeout", 30000, "")
 
 //subGameID 测试子游戏，游戏类型
-var subGameID = flag.Int("gameID", 930, "")
+var subGameID = flag.Int("gameID", 720, "")
 
 //subRoomID 测试子游戏，房间号
-var subRoomID = flag.Int("roomID", 9301, "")
+var subRoomID = flag.Int("roomID", 7201, "")
 
 //tokenprefix 测试token，免http登陆
 var tokenprefix = flag.String("prefix", "test_new2_", "")
-var tokenstart = flag.Int("tokenstart", 999, "")
+var tokenstart = flag.Int("tokenstart", 100, "")
 var tokenend = flag.Int("tokenend", 99999, "")
 
 //timestart 起始时间戳
@@ -170,8 +170,8 @@ func PopPeer() (id int64) {
 
 //
 func main() {
-	util.TestSemaphore()
-	util.ReadConsole(util.OnInputTestSemaphore)
+	// util.TestSemaphore()
+	// util.ReadConsole(util.OnInputTestSemaphore)
 	defer func() {
 		if r := recover(); r != nil {
 			log.Println(debug.Stack())

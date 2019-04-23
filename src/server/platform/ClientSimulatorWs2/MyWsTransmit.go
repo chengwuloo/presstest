@@ -94,12 +94,12 @@ func (s *MyWsTransmit) OnRecvMessage(peer Session) (interface{}, error) {
 	if mainID == uint8(Game_Common.MAINID_MAIN_MESSAGE_CLIENT_TO_GAME_LOGIC) {
 		tMsg, _, err := codec.DecodeMessage(SubCmdID, buf[18:])
 		if err != nil {
-			log.Fatalln("OnRecvMessage: ", err)
+			log.Printf("OnRecvMessage 1: [mainID=%d subID=%d] ERR: %v\n", mainID, subID, err)
 			return nil, err
 		}
 		pMsg, ok := tMsg.(*GameServer.MSG_CSC_Passageway)
 		if !ok {
-			log.Fatalln("OnRecvMessage: ", err)
+			log.Printf("OnRecvMessage 2: [mainID=%d subID=%d] ERR: %v\n", mainID, subID, err)
 			return nil, nil
 		}
 		msg.Data = pMsg.PassData[:]

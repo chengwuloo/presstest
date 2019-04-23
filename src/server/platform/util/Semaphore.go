@@ -100,12 +100,12 @@ func TestSemaphore() {
 
 	for i := 0; i < 100; i++ {
 		go func() {
-
 			for {
 				gSem.Enter()
 				ix--
-				println("======= ", ix)
+				println("1======= ", ix)
 				ix++
+				println("2======= ", ix)
 				gSem.Leave()
 			}
 		}()
