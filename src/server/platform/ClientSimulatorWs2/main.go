@@ -9,7 +9,7 @@ import (
 	"flag"
 	"log"
 	"os"
-	"os/exec"
+	"runtime"
 	"runtime/debug"
 	"server/platform/util"
 	"sync"
@@ -29,7 +29,7 @@ var wsaddr = flag.String("wsaddr", "192.168.2.211:10000", "")
 var numMailbox = flag.Int("mailboxs", 100, "")
 
 //totalClient 单进程登陆客户端总数
-var totalClients = flag.Int("totalClients", 100, "")
+var totalClients = flag.Int("totalClients", 1, "")
 
 //numClients 单进程并发登陆客户端数<并发登陆>
 var numClients = flag.Int("numClients", 100, "")
@@ -104,9 +104,7 @@ func onInput(str string) int {
 		}
 	case "c":
 		{
-			cmd := exec.Command("cmd", "/c", "cls")
-			cmd.Stdout = os.Stdout
-			cmd.Run()
+			util.ClearScreen[runtime.GOOS]()
 			return 0
 		}
 	case "s":

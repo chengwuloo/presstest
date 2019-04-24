@@ -264,3 +264,17 @@ func ReadConsole(callback func(string) int) {
 		}
 	}
 }
+
+//ClearScreen 清屏函数
+var ClearScreen = map[string]func(){
+	"windows": func() {
+		cmd := exec.Command("cmd", "/c", "cls")
+		cmd.Stdout = os.Stdout
+		cmd.Run()
+	},
+	"linux": func() {
+		cmd := exec.Command("clear")
+		cmd.Stdout = os.Stdout
+		cmd.Run()
+	},
+}

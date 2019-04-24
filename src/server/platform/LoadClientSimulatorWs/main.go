@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"server/platform/util"
 	"strings"
 	"sync"
@@ -77,9 +78,7 @@ func onInput(str string) int {
 	switch str {
 	case "c":
 		{
-			cmd := exec.Command("cmd", "/c", "cls")
-			cmd.Stdout = os.Stdout
-			cmd.Run()
+			util.ClearScreen[runtime.GOOS]()
 			return 0
 		}
 	case "q":
@@ -178,11 +177,11 @@ func main() {
 		log.Fatal(err)
 	}
 	var execname, execStr string
-	if strings.Index(dir, "/") != -1 {
+	if runtime.GOOS == "linux" {
 		dir += "/../ClientSimulatorWs2/"
 		execname = "ClientSimulatorWs2"
 		execStr = "./" + execname
-	} else if strings.Index(dir, "\\") != -1 {
+	} else if runtime.GOOS == "windows" {
 		dir += "\\..\\ClientSimulatorWs2\\"
 		execname = "ClientSimulatorWs2.exe"
 		execStr = execname
