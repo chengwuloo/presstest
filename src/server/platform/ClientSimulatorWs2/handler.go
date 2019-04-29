@@ -30,10 +30,10 @@ func ParallLoginRequest() {
 			//进入访问资源
 			gSemLogin.Enter()
 			//HTTP请求token
-			// token, err := HTTPGetToken(*httpaddr, *baseAccount+int64(i))
-			// if token == "" || err != nil {
-			// 	continue
-			// }
+			token, err := HTTPGetToken(*httpaddr, *baseAccount+int64(i))
+			if token == "" || err != nil {
+				continue
+			}
 			//当前时间戳
 			//timenow = TimeNowMilliSec()
 			// timdiff := TimeDiff(timenow, timestart)
@@ -46,7 +46,7 @@ func ParallLoginRequest() {
 			// }
 			//websocket客户端
 			client := NewDefWSClient()
-			token := *tokenprefix + fmt.Sprintf("%d", *tokenstart+i)
+			//token := *tokenprefix + fmt.Sprintf("%d", *tokenstart+i)
 			client.(*DefWSClient).Token = token
 			client.(*DefWSClient).Account = *baseAccount + int64(i)
 			//连接游戏大厅
@@ -121,7 +121,6 @@ func HTTPGetToken(httpaddr string, account int64) (token string, e error) {
 	str = strings.Replace(str, "\\", "", -1)
 	str = str[1 : len(str)-1]
 	body = util.Str2Byte(str)
-
 	var authResult HTTPAuthResult
 	if err := util.Byte2JSON(body, &authResult); err != nil {
 		//log.Println("----->>>> ", str)
@@ -130,8 +129,11 @@ func HTTPGetToken(httpaddr string, account int64) (token string, e error) {
 		return
 	}
 	url := authResult.Data.URL
-	pos := strings.Index(url, "=")
-	token = url[pos+1:]
+	pos := strings.Index(url, "&")
+	left := url[pos+1:]
+	pos = strings.Index(left, "=")
+	pos2 := strings.Index(left, "&")
+	token = left[pos+1 : pos2]
 	//log.Printf("--- *** PID[%07d] token >>> %v", os.Getpid(), token)
 	return
 }
