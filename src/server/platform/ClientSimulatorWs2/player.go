@@ -228,6 +228,7 @@ func (s *Player) resultPlayerEnterRoom(msg interface{}, peer Session) {
 		elapsed += d
 		if c >= int64(*totalClients) {
 			log.Printf("--- *** PID[%07d] resultPlayerEnterRoom[%03d][%03d][%03d] elapsed:%dms All:%dms\n", os.Getpid(), gClients, gClientsSucc, gClientsFailed, d, elapsed)
+			gStep = StepAll
 		} else {
 			log.Printf("--- *** PID[%07d] resultPlayerEnterRoom[%03d][%03d][%03d] elapsed:%dms\n", os.Getpid(), gClients, gClientsSucc, gClientsFailed, d)
 		}

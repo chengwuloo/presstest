@@ -14,13 +14,14 @@ import (
 	"server/platform/util"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 //.\ClientSimulatorWs2.exe -httpaddr= -wsaddr= -mailboxs= -totalClients=%d -numClients=%d -numClients2=%d -numClients3=%d -baseTest= -deltaClients= -deltaTime= -interval= -timeout=
 
 //HTTPAddr HTTP请求token地址
-var httpaddr = flag.String("httpaddr", "192.168.2.20", "")
+var httpaddr = flag.String("httpaddr", "192.168.2.214", "")
 
 //wsaddr Websocket登陆地址
 var wsaddr = flag.String("wsaddr", "192.168.2.211:10000", "")
@@ -29,19 +30,19 @@ var wsaddr = flag.String("wsaddr", "192.168.2.211:10000", "")
 var numMailbox = flag.Int("mailboxs", 100, "")
 
 //totalClient 单进程登陆客户端总数
-var totalClients = flag.Int("totalClients", 1, "")
+var totalClients = flag.Int("totalClients", 10, "")
 
 //numClients 单进程并发登陆客户端数<并发登陆>
-var numClients = flag.Int("numClients", 100, "")
+var numClients = flag.Int("numClients", 1, "")
 
 //numClients2 单进程并发进房间客户端数<并发进房间>
-var numClients2 = flag.Int("numClients2", 100, "")
+var numClients2 = flag.Int("numClients2", 1, "")
 
 //numClients3 单进程并发投注客户端数<并发投注>
-var numClients3 = flag.Int("numClients3", 1000, "")
+var numClients3 = flag.Int("numClients3", 10, "")
 
 //BaseAccount 测试起始账号
-var baseAccount = flag.Int64("baseTest", 9000000, "")
+var baseAccount = flag.Int64("baseTest", 200, "")
 
 //deltaClients 间隔连接数检查时间戳
 var deltaClients = flag.Int("deltaClients", 500, "")
@@ -80,6 +81,7 @@ const (
 	StepNil = iota
 	StepLogin
 	StepEnter
+	StepAll
 )
 
 var gStep = StepNil
@@ -109,6 +111,17 @@ func onInput(str string) int {
 		}
 	case "s":
 		{
+
+		}
+	}
+	return 0
+}
+
+//
+func StartDaemon() {
+	go func() {
+		for StepAll != gStep {
+			time.Sleep(100)
 			if StepLogin == gStep &&
 				atomic.LoadInt64(&gClients) >= int64(*totalClients) {
 				gStep = StepEnter
@@ -127,8 +140,9 @@ func onInput(str string) int {
 				}
 			}
 		}
-	}
-	return 0
+		//控制台命令行输入 按'q'退出 'c'清屏q
+		util.ReadConsole(onInput)
+	}()
 }
 
 //gClients 登陆总数
@@ -191,8 +205,9 @@ func main() {
 	gSemEnter = util.NewSemaphore(int64(*numClients2))
 	//投注并发访问控制
 	gSemJetton = util.NewFreeSemaphore(int64(*numClients3))
-	//控制台命令行输入 按'q'退出 'c'清屏q
-	util.ReadConsole(onInput)
+	//开始运行
+	StartDaemon()
+	//等待退出
 	gMailbox.Wait()
 	gSessMgr.Wait()
 	log.Printf("--- *** PID[%07d] exit...", os.Getpid())

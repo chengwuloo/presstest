@@ -102,7 +102,6 @@ func HTTPGetToken(httpaddr string, account int64) (token string, e error) {
 		}
 	}()
 	requrl := fmt.Sprintf("http://%s/GameHandle?testAccount=%d", httpaddr, account)
-	//requrl := fmt.Sprintf("http://%s?testAccount=%d", httpaddr, account)
 	//log.Printf("--- *** PID[%07d] HTTPGetToken >>> %v", os.Getpid(), requrl)
 	rsp, err := http.Get(requrl)
 	if err != nil {
@@ -118,6 +117,7 @@ func HTTPGetToken(httpaddr string, account int64) (token string, e error) {
 		return
 	}
 	str := util.Byte2Str(body)
+	//log.Println(str)
 	str = strings.Replace(str, "\\", "", -1)
 	str = str[1 : len(str)-1]
 	body = util.Str2Byte(str)
