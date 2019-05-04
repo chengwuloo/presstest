@@ -128,7 +128,7 @@ func HTTPGetToken(httpaddr string, account int64) (token, ipaddr string, e error
 	str := util.Byte2Str(body)
 	//log.Println(str)
 	str = strings.Replace(str, "\\", "", -1)
-	str = str[1 : len(str)-1]
+	//str = str[1 : len(str)-1]
 	body = util.Str2Byte(str)
 	var authResult HTTPAuthResult
 	if err := util.Byte2JSON(body, &authResult); err != nil {
