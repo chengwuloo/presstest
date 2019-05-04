@@ -77,6 +77,11 @@ func ParallEnterRoomRequest() {
 					if peer != nil {
 						//登陆成功，获取游戏列表
 						reqGameListInfo(peer)
+						//进入房间
+						// client := peer.GetCtx(TagUserInfo).(*DefWSClient)
+						// client.GameID = int32(*subGameID) //保存
+						// client.RoomID = int32(*subRoomID)
+						// reqEnterRoom(peer, client.GameID, client.RoomID, client.Pwd[:])
 					}
 				}
 			}
