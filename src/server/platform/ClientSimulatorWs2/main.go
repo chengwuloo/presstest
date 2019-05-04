@@ -21,13 +21,13 @@ import (
 //.\ClientSimulatorWs2.exe -httpaddr= -wsaddr= -mailboxs= -totalClients=%d -numClients=%d -numClients2=%d -numClients3=%d -baseTest= -deltaClients= -deltaTime= -interval= -timeout=
 
 //HTTPAddr HTTP请求token地址
-var httpaddr = flag.String("httpaddr", "192.168.2.30:801", "")
+var httpaddr = flag.String("httpaddr", "192.168.2.214", "")
 
 //wsaddr Websocket登陆地址
 var wsaddr = flag.String("wsaddr", "192.168.2.211:10000", "")
 
 //dynamic 启用动态获取wsaddr，由HTTP返回网关ipaddr
-var dynamic = flag.Int("dynamic", 0, "")
+var dynamic = flag.Int("dynamic", 1, "")
 
 //numMailbox 单进程邮槽数，最好等于clients 5000
 var numMailbox = flag.Int("mailboxs", 100, "")
@@ -139,9 +139,9 @@ func StartDaemon() {
 				}
 			}
 		}
-		//控制台命令行输入 按'q'退出 'c'清屏q
-		util.ReadConsole(onInput)
 	}()
+	//控制台命令行输入 按'q'退出 'c'清屏q
+	go util.ReadConsole(onInput)
 }
 
 //gClients 登陆总数
