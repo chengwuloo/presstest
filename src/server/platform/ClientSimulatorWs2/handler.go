@@ -65,12 +65,12 @@ func ParallEnterRoomRequest() {
 	go func() {
 		//起始时间戳
 		timestart = TimeNowMilliSec()
-		for i := 0; i < *totalClients; i++ {
-			//进入访问资源
-			gSemEnter.Enter()
-			//游戏类型和房间都有效，则进入房间
-			p, ok := GGames.Exist(int32(*subGameID))
-			if 0 != *subGameID && 0 != *subRoomID && ok && p.Exist(int32(*subRoomID)) {
+		//游戏类型和房间都有效，则进入房间
+		p, ok := GGames.Exist(int32(*subGameID))
+		if 0 != *subGameID && 0 != *subRoomID && ok && p.Exist(int32(*subRoomID)) {
+			for i := 0; i < *totalClients; i++ {
+				//进入访问资源
+				gSemEnter.Enter()
 				sesID := PopPeer()
 				if sesID > 0 {
 					peer := gSessMgr.Get(sesID)
