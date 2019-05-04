@@ -26,6 +26,9 @@ var httpaddr = flag.String("httpaddr", "192.168.2.30:801", "")
 //wsaddr Websocket登陆地址
 var wsaddr = flag.String("wsaddr", "192.168.2.75:10000", "")
 
+//dynamic 启用动态获取wsaddr，由HTTP返回网关ipaddr
+var dynamic = flag.Int("dynamic", 0, "")
+
 //numMailbox 单进程邮槽数，最好等于clients 5000
 var numMailbox = flag.Int("mailboxs", 5000, "")
 
@@ -148,6 +151,7 @@ func loadConf() bool {
 		*children = c.children
 		*httpaddr = c.httpaddr
 		*wsaddr = c.wsaddr
+		*dynamic = c.dynamic
 		*numMailbox = c.numMailbox
 		*totalClients = c.totalClients
 		*numClients = c.numClients
@@ -195,9 +199,9 @@ func main() {
 	}()
 	//启动客户端进程数*children
 	for i := 0; i < *children; i++ {
-		cmdLine := fmt.Sprintf("%s -httpaddr=%s -wsaddr=%s -mailboxs=%d -totalClients=%d -numClients=%d -numClients2=%d -numClients3=%d -baseTest=%d -deltaClients=%d -deltaTime=%d -interval=%d -timeout=%d -gameID=%d -roomID=%d -prefix=%s -tokenstart=%d -tokenend=%d",
+		cmdLine := fmt.Sprintf("%s -httpaddr=%s -dynamic=%d -wsaddr=%s -mailboxs=%d -totalClients=%d -numClients=%d -numClients2=%d -numClients3=%d -baseTest=%d -deltaClients=%d -deltaTime=%d -interval=%d -timeout=%d -gameID=%d -roomID=%d -prefix=%s -tokenstart=%d -tokenend=%d",
 			execStr,
-			*httpaddr, *wsaddr, *numMailbox, *totalClients, *numClients, *numClients2, *numClients3, *baseAccount+int64(*totalClients)*int64(i), *deltaClients, *deltaTime, *heartbeat, *timeout, *subGameID, *subRoomID,
+			*httpaddr, *dynamic, *wsaddr, *numMailbox, *totalClients, *numClients, *numClients2, *numClients3, *baseAccount+int64(*totalClients)*int64(i), *deltaClients, *deltaTime, *heartbeat, *timeout, *subGameID, *subRoomID,
 			*tokenprefix, *tokenstart+int(*totalClients)*int(i), *tokenend)
 		args := strings.Split(cmdLine, " ")
 		attr := &os.ProcAttr{

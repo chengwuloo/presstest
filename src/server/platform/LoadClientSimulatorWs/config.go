@@ -11,6 +11,7 @@ type iniConfig struct {
 	children     int
 	httpaddr     string
 	wsaddr       string
+	dynamic      int
 	numMailbox   int
 	totalClients int
 	numClients   int
@@ -40,6 +41,7 @@ func readini(filename string) (c *iniConfig) {
 	c.children = ini.GetInt("children", "num")
 	c.httpaddr = ini.GetString("httpaddr", "httpaddr")
 	c.wsaddr = ini.GetString("wsaddr", "wsaddr")
+	c.dynamic = ini.GetInt("wsaddr", "dynamic")
 	c.numMailbox = ini.GetInt("mailboxs", "mailboxs")
 	c.totalClients = ini.GetInt("clients", "totalClients")
 	c.numClients = ini.GetInt("clients", "numClients")

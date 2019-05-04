@@ -30,7 +30,7 @@ func ParallLoginRequest() {
 			//进入访问资源
 			gSemLogin.Enter()
 			//HTTP请求token
-			token, err := HTTPGetToken(*httpaddr, *baseAccount+int64(i))
+			token, ipaddr, err := HTTPGetToken(*httpaddr, *baseAccount+int64(i))
 			if token == "" || err != nil {
 				continue
 			}
@@ -50,7 +50,11 @@ func ParallLoginRequest() {
 			client.(*DefWSClient).Token = token
 			client.(*DefWSClient).Account = *baseAccount + int64(i)
 			//连接游戏大厅
-			client.ConnectTCP(*wsaddr)
+			if *dynamic == 0 {
+				client.ConnectTCP(*wsaddr)
+			} else {
+				client.ConnectTCP(ipaddr)
+			}
 		}
 	}()
 }
@@ -84,18 +88,23 @@ func ParallEnterRoomRequest() {
 type HTTPAuthResult struct {
 	Type     float64       `json:"type,omitempty"`
 	Maintype string        `json:"maintype,omitempty"`
-	Data     *HTTPAuthData `json:"d,omitempty"`
+	Data     *HTTPAuthData `json:"data,omitempty"`
 }
 
 //
 type HTTPAuthData struct {
-	Code float64 `json:"code,omitempty"`
-	URL  string  `json:"url,omitempty"`
+	Code    float64 `json:"code,omitempty"`
+	Account string  `json:"account,omitempty"`
+	IP      string  `json:"domain,omitempty"`
+	Port    string  `json:"port,omitempty"`
+	Token   string  `json:"token,omitempty"`
+	Time    string  `json:"time,omitempty"`
 }
 
 //HTTPGetToken 客户端 - 查询token
+//HTTPGetToken ipaddr 网关ipaddr
 //-------------------------------------------------------------
-func HTTPGetToken(httpaddr string, account int64) (token string, e error) {
+func HTTPGetToken(httpaddr string, account int64) (token, ipaddr string, e error) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Fatalln(debug.Stack())
@@ -128,12 +137,10 @@ func HTTPGetToken(httpaddr string, account int64) (token string, e error) {
 		e = err
 		return
 	}
-	url := authResult.Data.URL
-	pos := strings.Index(url, "&")
-	left := url[pos+1:]
-	pos = strings.Index(left, "=")
-	pos2 := strings.Index(left, "&")
-	token = left[pos+1 : pos2]
+	//token
+	token = authResult.Data.Token
+	//网关ipaddr
+	ipaddr = authResult.Data.IP + ":" + authResult.Data.Port
 	//log.Printf("--- *** PID[%07d] token >>> %v", os.Getpid(), token)
 	return
 }

@@ -21,16 +21,19 @@ import (
 //.\ClientSimulatorWs2.exe -httpaddr= -wsaddr= -mailboxs= -totalClients=%d -numClients=%d -numClients2=%d -numClients3=%d -baseTest= -deltaClients= -deltaTime= -interval= -timeout=
 
 //HTTPAddr HTTP请求token地址
-var httpaddr = flag.String("httpaddr", "192.168.2.214", "")
+var httpaddr = flag.String("httpaddr", "192.168.2.30:801", "")
 
 //wsaddr Websocket登陆地址
 var wsaddr = flag.String("wsaddr", "192.168.2.211:10000", "")
+
+//dynamic 启用动态获取wsaddr，由HTTP返回网关ipaddr
+var dynamic = flag.Int("dynamic", 0, "")
 
 //numMailbox 单进程邮槽数，最好等于clients 5000
 var numMailbox = flag.Int("mailboxs", 100, "")
 
 //totalClient 单进程登陆客户端总数
-var totalClients = flag.Int("totalClients", 10, "")
+var totalClients = flag.Int("totalClients", 1, "")
 
 //numClients 单进程并发登陆客户端数<并发登陆>
 var numClients = flag.Int("numClients", 1, "")
@@ -39,7 +42,7 @@ var numClients = flag.Int("numClients", 1, "")
 var numClients2 = flag.Int("numClients2", 1, "")
 
 //numClients3 单进程并发投注客户端数<并发投注>
-var numClients3 = flag.Int("numClients3", 10, "")
+var numClients3 = flag.Int("numClients3", 1, "")
 
 //BaseAccount 测试起始账号
 var baseAccount = flag.Int64("baseTest", 200, "")
@@ -108,10 +111,6 @@ func onInput(str string) int {
 		{
 			util.ClearScreen[runtime.GOOS]()
 			return 0
-		}
-	case "s":
-		{
-
 		}
 	}
 	return 0
@@ -199,11 +198,11 @@ func main() {
 	gMailbox.Start(smain, *numMailbox, (*timeout)/1000+10)
 	t2 := TimeNowMilliSec()
 	log.Printf("--- *** PID[%07d] gMailbox.Start = [%03d] elapsed = %dms\n", os.Getpid(), *numMailbox, TimeDiff(t2, t1))
-	//登陆并发访问控制
+	//并发登陆控制
 	gSemLogin = util.NewSemaphore(int64(*numClients))
-	//进房间并发访问控制
+	//并发进房间控制
 	gSemEnter = util.NewSemaphore(int64(*numClients2))
-	//投注并发访问控制
+	//并发投注控制
 	gSemJetton = util.NewFreeSemaphore(int64(*numClients3))
 	//开始运行
 	StartDaemon()
