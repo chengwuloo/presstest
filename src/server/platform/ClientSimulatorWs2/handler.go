@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"runtime/debug"
 	"server/pb/GameServer"
@@ -100,10 +101,10 @@ type HTTPAuthResult struct {
 type HTTPAuthData struct {
 	Code    float64 `json:"code,omitempty"`
 	Account string  `json:"account,omitempty"`
+	URL     string  `json:"url,omitempty"`
 	IP      string  `json:"domain,omitempty"`
 	Port    string  `json:"port,omitempty"`
 	Token   string  `json:"token,omitempty"`
-	Time    string  `json:"time,omitempty"`
 }
 
 //HTTPGetToken 客户端 - 查询token
@@ -131,7 +132,7 @@ func HTTPGetToken(httpaddr string, account int64) (token, ipaddr string, e error
 		return
 	}
 	str := util.Byte2Str(body)
-	//log.Println(str)
+	log.Println(str)
 	str = strings.Replace(str, "\\", "", -1)
 	//str = str[1 : len(str)-1]
 	body = util.Str2Byte(str)
@@ -141,6 +142,30 @@ func HTTPGetToken(httpaddr string, account int64) (token, ipaddr string, e error
 		log.Printf("--- *** PID[%07d] HTTPGetToken Byte2JSON %v", os.Getpid(), err)
 		e = err
 		return
+	}
+	values, _ := url.ParseQuery(authResult.Data.URL)
+	//log.Println(values)
+	for url := range values {
+		sub := url[strings.Index(url, "?")+1:]
+		dic := map[string]string{}
+		for {
+			s := strings.Index(sub, "=")
+			if s == -1 {
+				break
+			}
+			p := strings.Index(sub, "&")
+			if p == -1 {
+				dic[sub[0:s]] = sub[s+1:]
+				break
+			} else {
+				dic[sub[0:s]] = sub[s+1 : p]
+			}
+			sub = sub[p+1:]
+		}
+		authResult.Data.IP = dic["domain"]
+		authResult.Data.Port = dic["port"]
+		authResult.Data.Token = dic["token"]
+		break
 	}
 	//token
 	token = authResult.Data.Token
