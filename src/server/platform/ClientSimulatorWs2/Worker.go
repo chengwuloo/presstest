@@ -14,6 +14,7 @@ type Worker interface {
 	RunAfterWith(delay int32, handler TimerCallback, args interface{}) uint32
 	RunEvery(delay, interval int32, args interface{}) uint32
 	RunEveryWith(delay, interval int32, handler TimerCallback, args interface{}) uint32
+	RemoveTimer(timerID uint32)
 	OnRead(cmd uint32, msg interface{}, peer Session)
 	OnCustom(cmd uint32, msg interface{}, peer Session)
 	OnTimer(timerID uint32, dt int32, args interface{}) bool
