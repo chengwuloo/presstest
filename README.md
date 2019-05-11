@@ -1,5 +1,4 @@
 # presstest
--------------------------
 棋牌游戏服压测客户端程序
 
     golang高并发压测客户端程序，协议：websocket&protobuf
