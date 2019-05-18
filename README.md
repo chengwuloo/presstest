@@ -2,7 +2,7 @@
 
     服务器压测程序框架组件(golang版本)
 		MsgProc.go 消息处理
-		MsgProcCell.go消息处理单元
+		MsgProcCell.go 消息处理单元
 		Mailbox.go(MsgProcPool.go) 邮槽(消息处理池)
 		Worker.go 工作类(逻辑业务类继承入口)
 		TimeWheel.go 时间轮用来处理超时连接
