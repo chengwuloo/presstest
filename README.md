@@ -17,3 +17,15 @@
     可以根据需要自定义修改底层通信协议
     LoadClientSimulatorWs 负责加载 ClientSimulatorWs2 子进程，windows/linux版
     配置在LoadClientSimulatorWs/conf.ini下
+
+  实现思路如下：
+  //listen/connect主线程 ///////////////////
+  
+  //网络IO线程(M)，IO收发(recv/send) ///////
+
+  //worker线程(N)，处理游戏业务逻辑 ////////
+
+  一个worker线程处理N个conn，
+  一个conn关联一个worker线程(hash运算或GetNextCell指定)，
+  没有其它worker线程竞争，没有线程切换开销，
+  每个conn上逻辑业务处理有序，无锁高效
