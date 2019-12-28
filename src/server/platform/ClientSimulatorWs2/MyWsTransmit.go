@@ -11,7 +11,8 @@ import (
 	"log"
 	"server/pb/GameServer"
 	"server/pb/Game_Common"
-
+	"server/platform/util"
+	
 	"github.com/davyxu/cellnet/codec"
 	"github.com/gorilla/websocket"
 )
@@ -102,6 +103,9 @@ func (s *MyWsTransmit) OnRecvMessage(peer Session) (interface{}, error) {
 			log.Printf("OnRecvMessage 2: [mainID=%d subID=%d] ERR: %v\n", mainID, subID, err)
 			return nil, nil
 		}
+		log.Printf("OnRecvMessage 0: [mainID=%d subID=%d]\n%v\n%v\n", mainID, subID, reflect.TypeOf(pMsg).Elem(), util.JSON2Str(pMsg))
+		//log.Printf("PassData.len = %d\n", len(pMsg.PassData[:]))
+		//log.Printf("\n\n%v\n\n", pMsg.PassData[:])
 		msg.Data = pMsg.PassData[:]
 	} else {
 		msg.Data = buf[18:]
