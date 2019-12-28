@@ -28,6 +28,15 @@
 	2.网络IO线程(M)，IO收发(recv/send) ///////
 	3.worker线程(N)，处理游戏业务逻辑 ////////
 
+## 特别注意
+	如果改动框架协议后，需要使用win32_proto.bat/win64_proto.bat重新生成框架协议，
+	然后手动修改HallServer.Message.pb.go和GameServer.Message.pb.go：
+		import时添加 "server/pb/Game_Common"
+		*Header 全部替换为 *Game_Common.Header
+		&Header{} 全部替换为 &Game_Common.Header{}
+	默认注释掉了win32_proto.bat/win64_proto.bat中生成框架协议脚本代码，
+	除非框架协议改动，需要开启重新生成框架协议，并按照上面的方式修改相应协议文件
+	
 ## 扩展方式
 sdata.go handle.go msg.go player.go里面添加相应模块就可以了
 * [sdata.go](http://192.168.2.210:12345/server/presstest/blob/master/src/server/platform/ClientSimulatorWs2/sdata.go): 添加子游戏类型(名称找ID，ID找名称两处)
