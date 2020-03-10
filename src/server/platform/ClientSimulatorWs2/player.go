@@ -10,9 +10,11 @@ import (
 	"math/rand"
 	"os"
 	"reflect"
+	"server/pb/BenCiBaoMa"
 	"server/pb/Brnn"
 	"server/pb/ErBaGang"
 	"server/pb/GameServer"
+	"server/pb/Game_Common"
 	"server/pb/HallServer"
 	"server/pb/HongHei"
 	"server/pb/Longhu"
@@ -58,6 +60,24 @@ func (s *Player) randPlaceJet(peer Session) {
 			x := rand.Intn(3)
 			sendPlayerPlaceJetHongHei(peer, int32(x), 100)
 		}
+	case GGames.ByName["奔驰宝马"].ID:
+		{
+			//用户主动下注 [0,7]
+			x := rand.Intn(7)
+			sendPlayerPlaceJetBcbm(peer, int32(x), 200)
+			client := peer.GetCtx(TagUserInfo).(*DefWSClient)
+			s.entry.RemoveTimer(client.TimerID1)
+			//进入访问资源
+			//if gSemJetton.Enter() {
+			client.TimerID1 = s.entry.RunAfter(2000, client)
+			//} else {
+			//	s.entry.GetCell().Append(func() {
+			//		if gSemJetton.Enter() {
+			//			client.TimerID1 = s.entry.RunAfter(500, client)
+			//		}
+			//	})
+			//}
+		}
 	}
 }
 
@@ -69,16 +89,20 @@ func (s *Player) OnTimer(timerID uint32, dt int32, args interface{}) bool {
 		peerIDs := s.entry.GetTimeWheel().UpdateWheel()
 		for _, id := range peerIDs {
 			peer := gSessMgr.Get(id)
-			if peer != nil {
-				client := peer.GetCtx(TagUserInfo).(*DefWSClient)
-				log.Printf("--- *** PID[%07d] player[%d:%d:%s] :: OnTimer 心跳超时 !!!!!!!!!!!!!!!",
-					os.Getpid(), client.UserID, client.Account, client.Token)
-				//peer.Close() //超时关闭连接
+			if peer == nil {
+				return false
 			}
+			client := peer.GetCtx(TagUserInfo).(*DefWSClient)
+			log.Printf("--- *** PID[%07d] player[%d:%d:%s] :: OnTimer 心跳超时 !!!!!!!!!!!!!!!",
+				os.Getpid(), client.UserID, client.Account, client.Token)
+			peer.Close() //超时关闭连接
 		}
 	} else if args != nil {
 		if client, ok := args.(*DefWSClient); ok {
 			peer := gSessMgr.Get(client.ID())
+			if peer == nil {
+				return false
+			}
 			//发送心跳包
 			if client.HeartID == timerID {
 				sendKeepAlive(peer, client.Token)
@@ -86,13 +110,20 @@ func (s *Player) OnTimer(timerID uint32, dt int32, args interface{}) bool {
 				return false
 			}
 			if client.TimerID1 == timerID {
-				s.randPlaceJet(peer)
 				//离开释放资源
-				//gSemJetton.Leave()
+				gSemJetton.Leave()
+				s.randPlaceJet(peer)
 				return false
 			}
 		}
 	}
+	return true
+}
+
+// OnTimerOrder - 来自服务端 - 上下分请求
+//-------------------------------------------------------------
+func (s *Player) OnTimerOrder(timerID uint32, dt int32, args interface{}) bool {
+
 	return true
 }
 
@@ -103,6 +134,7 @@ func (s *Player) resultPlayerLogin(msg interface{}, peer Session) {
 	if !ok {
 		log.Fatalln("resultPlayerLogin ", ok)
 	}
+	util.Logy("UserClient", "Player", "resultPlayerLogin", rspdata)
 	if rspdata.RetCode == 0 {
 		atomic.AddInt64(&gClientsSucc, 1)
 		AddSuccPeer(peer.ID())
@@ -124,9 +156,11 @@ func (s *Player) resultPlayerLogin(msg interface{}, peer Session) {
 		// 	//登陆成功，获取游戏列表
 		// 	reqGameListInfo(peer)
 		// }
+		GLoginedUsers.AddUserInfo(client.UserID, client.Account, client.AgentID)
+		//发送上下分请求
+		//sendHTTPOrderRequest(peer)
 	} else {
 		atomic.AddInt64(&gClientsFailed, 1)
-		util.Logy("UserClient", "Player", "resultPlayerLogin", rspdata)
 		//失败关闭
 		//peer.Close()
 	}
@@ -142,6 +176,8 @@ func (s *Player) resultPlayerLogin(msg interface{}, peer Session) {
 			log.Printf("--- *** PID[%07d] resultPlayerLogin[%03d][%03d][%03d] elapsed:%dms\n", os.Getpid(), gClients, gClientsSucc, gClientsFailed, d)
 		}
 	}
+	//不需要了关闭连接
+	peer.Close()
 	//离开释放资源
 	gSemLogin.Leave()
 }
@@ -177,7 +213,7 @@ func (s *Player) resultGameListInfo(msg interface{}, peer Session) {
 	// 	GGames.ByName["龙虎斗"].ByName["初级房"])
 	//*subGameID = GGames.ByName["红黑大战"].ID
 	//*subRoomID = GGames.ByName["红黑大战"].ByName["体验房"]
-	reqGameserverInfo(peer, int32(*subGameID), int32(*subRoomID))
+	//reqGameserverInfo(peer, int32(*subGameID), int32(*subRoomID))
 }
 
 //resultGameserverInfo 服务端返回 - 获取游戏IP
@@ -285,6 +321,30 @@ func (s *Player) resultPlayerLeave(msg interface{}, peer Session) {
 		log.Fatalln("resultPlayerLeave ", ok)
 	}
 	util.Log("UserClient", "Player", "resultPlayerLeave", rspdata)
+}
+
+//resultOrderNotify 服务端返回 - 上下分通知
+//-------------------------------------------------------------
+func (s *Player) resultOrderNotify(msg interface{}, peer Session) {
+	rspdata, ok := msg.(*HallServer.OrderNotifyMessage)
+	if !ok {
+		log.Fatalln("resultOrderNotify ", ok)
+	}
+	util.Logy("UserClient", "Player", "resultOrderNotify", rspdata)
+	//发送上下分请求
+	//sendHTTPOrderRequest(peer)
+}
+
+//resultProxyOrderNotify 服务端返回 - 上下分通知
+//-------------------------------------------------------------
+func (s *Player) resultProxyOrderNotify(msg interface{}, peer Session) {
+	rspdata, ok := msg.(*Game_Common.ProxyNotifyOrderScoreMessage)
+	if !ok {
+		log.Fatalln("resultProxyOrderNotify ", ok)
+	}
+	util.Logy("UserClient", "Player", "resultProxyOrderNotify", rspdata)
+	//发送上下分请求
+	//sendHTTPOrderRequest(peer)
 }
 
 //---------------------------------------------------------------------------------------------
@@ -872,6 +932,133 @@ func (s *Player) onJettonBroadcastHongHei(msg interface{}, peer Session) {
 	util.Logx("UserClient", "Player", client.UserID, client.Account, "onJettonBroadcastHongHei", rspdata)
 }
 
+//---------------------------------------------------------------------------------------------
+//奔驰宝马
+//---------------------------------------------------------------------------------------------
+
+//開始游戲
+func (s *Player) onGameStartBcbm(msg interface{}, peer Session) {
+	rspdata, ok := msg.(*BenCiBaoMa.CMD_S_GameStart)
+	if !ok {
+		log.Fatalln("onGameStartBcbm ", ok)
+	}
+	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
+	util.Logx("UserClient", "Player", client.UserID, client.Account, "onGameStartBcbm", rspdata)
+	s.entry.RemoveTimer(client.TimerID1)
+	//进入访问资源
+	//if gSemJetton.Enter() {
+	client.TimerID1 = s.entry.RunAfter(2000, client)
+	//} else {
+	//	s.entry.GetCell().Append(func() {
+	//		if gSemJetton.Enter() {
+	//			client.TimerID1 = s.entry.RunAfter(500, client)
+	//		}
+	//	})
+	//}
+}
+
+//游戲結束
+func (s *Player) onGameEndBcbm(msg interface{}, peer Session) {
+	rspdata, ok := msg.(*BenCiBaoMa.CMD_S_GameEnd)
+	if !ok {
+		log.Fatalln("onGameEndBcbm ", ok)
+	}
+	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
+	util.Logx("UserClient", "Player", client.UserID, client.Account, "onGameEndBcbm", rspdata)
+	//取消定时器
+	s.entry.RemoveTimer(client.TimerID1)
+}
+
+//開始游戲場景
+func (s *Player) onSceneGameStartBcbm(msg interface{}, peer Session) {
+	rspdata, ok := msg.(*BenCiBaoMa.CMD_S_Scene_GameStart)
+	if !ok {
+		log.Fatalln("onSceneGameStartBcbm ", ok)
+	}
+	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
+	util.Logx("UserClient", "Player", client.UserID, client.Account, "onSceneGameStartBcbm", rspdata)
+}
+
+//結束游戲場景
+func (s *Player) onSceneGameEndBcbm(msg interface{}, peer Session) {
+	rspdata, ok := msg.(*BenCiBaoMa.CMD_S_Scene_GameEnd)
+	if !ok {
+		log.Fatalln("onSceneGameEndBcbm ", ok)
+	}
+	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
+	util.Logx("UserClient", "Player", client.UserID, client.Account, "onSceneGameEndBcbm", rspdata)
+}
+
+//游戏结束时返回玩家结算信息
+func (s *Player) onUserWinListBcbm(msg interface{}, peer Session) {
+	rspdata, ok := msg.(*BenCiBaoMa.CMD_S_UserWinList)
+	if !ok {
+		log.Fatalln("onUserWinListBcbm ", ok)
+	}
+	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
+	util.Logx("UserClient", "Player", client.UserID, client.Account, "onUserWinListBcbm", rspdata)
+}
+
+//下注成功返回
+func (s *Player) onPlaceJetSuccessBcbm(msg interface{}, peer Session) {
+	rspdata, ok := msg.(*BenCiBaoMa.CMD_S_PlaceJetSuccess)
+	if !ok {
+		log.Fatalln("onPlaceJetSuccessBcbm ", ok)
+	}
+	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
+	util.Logx("UserClient", "Player", client.UserID, client.Account, "onPlaceJetSuccessBcbm", rspdata)
+}
+
+//下注失败返回
+func (s *Player) onPlaceJettonFailBcbm(msg interface{}, peer Session) {
+	rspdata, ok := msg.(*BenCiBaoMa.CMD_S_PlaceJettonFail)
+	if !ok {
+		log.Fatalln("onPlaceJettonFailBcbm ", ok)
+	}
+	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
+	util.Logx("UserClient", "Player", client.UserID, client.Account, "onPlaceJettonFailBcbm", rspdata)
+}
+
+//获取玩家在线列表
+func (s *Player) onPlayerListBcbm(msg interface{}, peer Session) {
+	rspdata, ok := msg.(*BenCiBaoMa.CMD_S_PlayerList)
+	if !ok {
+		log.Fatalln("onPlayerListBcbm ", ok)
+	}
+	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
+	util.Logx("UserClient", "Player", client.UserID, client.Account, "onPlayerListBcbm", rspdata)
+}
+
+//服务器返回当前状态
+func (s *Player) onUserCurStateBcbm(msg interface{}, peer Session) {
+	rspdata, ok := msg.(*BenCiBaoMa.CMD_S_CurState)
+	if !ok {
+		log.Fatalln("onUserCurStateBcbm ", ok)
+	}
+	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
+	util.Logx("UserClient", "Player", client.UserID, client.Account, "onUserCurStateBcbm", rspdata)
+}
+
+//续押下注成功返回
+func (s *Player) onPlaceRepeatJetSuccessBcbm(msg interface{}, peer Session) {
+	rspdata, ok := msg.(*BenCiBaoMa.CMD_S_RepeatJetSuccess)
+	if !ok {
+		log.Fatalln("onPlaceRepeatJetSuccessBcbm ", ok)
+	}
+	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
+	util.Logx("UserClient", "Player", client.UserID, client.Account, "onPlaceRepeatJetSuccessBcbm", rspdata)
+}
+
+//广播一段时间内其他所有玩家的下注
+func (s *Player) onOtherPlaceJetSuccessBcbm(msg interface{}, peer Session) {
+	rspdata, ok := msg.(*BenCiBaoMa.CMD_S_OtherPlaceJetSuccess)
+	if !ok {
+		log.Fatalln("onOtherPlaceJetSuccessBcbm ", ok)
+	}
+	client := peer.GetCtx(TagUserInfo).(*DefWSClient)
+	util.Logx("UserClient", "Player", client.UserID, client.Account, "onOtherPlaceJetSuccessBcbm", rspdata)
+}
+
 //
 func (s *Player) registerModuleHandler(handlers CmdCallbacks) {
 	//登陆返回
@@ -894,7 +1081,9 @@ func (s *Player) registerModuleHandler(handlers CmdCallbacks) {
 	handlers[uint32(ENWORD(3, 29))] = s.resultPlayerReady
 	//离开响应
 	handlers[uint32(ENWORD(3, 10))] = s.resultPlayerLeave
-
+	//上下分通知
+	handlers[uint32(ENWORD(2, 66))] = s.resultOrderNotify
+	handlers[uint32(ENWORD(1, 11))] = s.resultProxyOrderNotify
 	switch int32(*subGameID) {
 	case GGames.ByName["龙虎斗"].ID:
 		{
@@ -987,6 +1176,31 @@ func (s *Player) registerModuleHandler(handlers CmdCallbacks) {
 			handlers[uint32(ENWORD(4, 139))] = s.onStartJettonHongHei
 			//
 			handlers[uint32(ENWORD(4, 140))] = s.onJettonBroadcastHongHei
+		}
+	case GGames.ByName["奔驰宝马"].ID:
+		{
+			//開始游戲
+			handlers[uint32(ENWORD(4, 100))] = s.onGameStartBcbm
+			//游戲結束
+			handlers[uint32(ENWORD(4, 101))] = s.onGameEndBcbm
+			//開始游戲場景
+			handlers[uint32(ENWORD(4, 102))] = s.onSceneGameStartBcbm
+			//結束游戲場景
+			handlers[uint32(ENWORD(4, 103))] = s.onSceneGameEndBcbm
+			//游戏结束时返回玩家结算信息
+			handlers[uint32(ENWORD(4, 104))] = s.onUserWinListBcbm
+			//下注成功返回
+			handlers[uint32(ENWORD(4, 105))] = s.onPlaceJetSuccessBcbm
+			//下注失败返回
+			handlers[uint32(ENWORD(4, 106))] = s.onPlaceJettonFailBcbm
+			//获取玩家在线列表
+			handlers[uint32(ENWORD(4, 111))] = s.onPlayerListBcbm
+			//服务器返回当前状态
+			handlers[uint32(ENWORD(4, 113))] = s.onUserCurStateBcbm
+			//续押下注成功返回
+			handlers[uint32(ENWORD(4, 114))] = s.onPlaceRepeatJetSuccessBcbm
+			//广播一段时间内其他所有玩家的下注
+			handlers[uint32(ENWORD(4, 115))] = s.onOtherPlaceJetSuccessBcbm
 		}
 	}
 }

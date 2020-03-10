@@ -9,13 +9,14 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/md5"
+	"encoding/base64"
 	"encoding/gob"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"math/rand"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -136,10 +137,44 @@ func ToBytes(data interface{}) ([]byte, error) {
 }
 
 // MD5 生成32位 MD5
-func MD5(text string) string {
-	ctx := md5.New()
-	ctx.Write([]byte(text))
-	return hex.EncodeToString(ctx.Sum(nil))
+func MD5(text string, upper bool) string {
+	h := md5.New()
+	h.Write([]byte(text))
+	if upper == true {
+		return fmt.Sprintf("%X", h.Sum(nil))
+	} else {
+		//return hex.EncodeToString(h.Sum(nil))
+		return fmt.Sprintf("%x", h.Sum(nil))
+	}
+}
+
+//Base64Encode Base64编码
+func Base64Encode(data []byte) string {
+	//return base64.StdEncoding.EncodeToString(data)
+	return base64.RawStdEncoding.EncodeToString(data)
+}
+
+//Base64Decode Base64解码
+func Base64Decode(s string) (b []byte, err error) {
+	b, err = base64.URLEncoding.DecodeString(s)
+	return
+}
+
+//URLEncode 编码
+func URLEncode(s string) string {
+	return url.QueryEscape(s)
+	//if uri, err := url.Parse(s); err == nil {
+	//	return uri.EscapedPath()
+	//}
+	//return ""
+}
+
+//URLDecode 解码
+func URLDecode(s string) string {
+	if d, err := url.QueryUnescape(s); err == nil {
+		return d
+	}
+	return ""
 }
 
 // randomseedInit 随机种子

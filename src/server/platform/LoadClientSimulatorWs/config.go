@@ -10,7 +10,13 @@ type iniConfig struct {
 	flag         int
 	children     int
 	httpaddr     string
+	httpaddr1    string
+	httptimeout  int
 	wsaddr       string
+	md5code      string
+	descode      string
+	isdecrypt    int
+	agentid      int
 	dynamic      int
 	numMailbox   int
 	totalClients int
@@ -40,6 +46,9 @@ func readini(filename string) (c *iniConfig) {
 	c.flag = ini.GetInt("flag", "flag")
 	c.children = ini.GetInt("children", "num")
 	c.httpaddr = ini.GetString("httpaddr", "httpaddr")
+	c.httpaddr1 = ini.GetString("httpaddr", "httpaddr1")
+	c.isdecrypt = ini.GetInt("httpaddr", "isdecrypt")
+	c.httptimeout = ini.GetInt("httpaddr", "timeout")
 	c.wsaddr = ini.GetString("wsaddr", "wsaddr")
 	c.dynamic = ini.GetInt("wsaddr", "dynamic")
 	c.numMailbox = ini.GetInt("mailboxs", "mailboxs")
@@ -57,6 +66,9 @@ func readini(filename string) (c *iniConfig) {
 	c.tokenprefix = ini.GetString("baseTest", "prefix")
 	c.tokenstart = ini.GetInt("baseTest", "tokenstart")
 	c.tokenend = ini.GetInt("baseTest", "tokenend")
+	c.agentid = ini.GetInt("baseTest", "agentid")
+	c.md5code = ini.GetString("baseTest", "md5code")
+	c.descode = ini.GetString("baseTest", "descode")
 	// log.Println("children: ", c.children)
 	// log.Println("httpaddr: ", c.httpaddr)
 	// log.Println("wsaddr: ", c.wsaddr)

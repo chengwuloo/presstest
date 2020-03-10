@@ -60,7 +60,11 @@ func DecodecAddReadTask(msg interface{}, peer Session) {
 		}
 	} else {
 		mainID, subID := DEWORD(int(cmd))
-		log.Printf("DecodecAddReadTask[cmd = %d mainID=%d subID=%d] ERR: %v\n", cmd, mainID, subID, err)
+		if mainID == 1 && subID == 10 {
+
+		} else {
+			log.Printf("DecodecAddReadTask[cmd = %d mainID=%d subID=%d] ERR: %v\n", cmd, mainID, subID, err)
+		}
 		// 消息解析出错(不明数据), 直接断开连接
 		//log.Fatalln("DecodecAddReadTask ", err)
 		//peer.Close()

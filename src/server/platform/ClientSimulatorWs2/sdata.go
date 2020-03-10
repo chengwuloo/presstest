@@ -184,6 +184,16 @@ var GGames = Games{
 				"高级房": 3004,
 			},
 		},
+		//奔驰宝马
+		"奔驰宝马": Game{
+			ID: 1960,
+			ByID: map[int32]string{
+				19601: "体验房",
+			},
+			ByName: map[string]int32{
+				"体验房": 19601,
+			},
+		},
 	},
 	ByID: map[int32]Game{
 		//抢庄牛牛
@@ -336,6 +346,16 @@ var GGames = Games{
 				"初级房": 3002,
 				"中级房": 3003,
 				"高级房": 3004,
+			},
+		},
+		//奔驰宝马
+		1960: Game{
+			Name: "奔驰宝马",
+			ByID: map[int32]string{
+				19601: "体验房",
+			},
+			ByName: map[string]int32{
+				"体验房": 19601,
 			},
 		},
 	},

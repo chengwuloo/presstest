@@ -66,7 +66,6 @@ func (s *DefTCPClient) ConnectTCP(address string) {
 
 //
 func (s *DefTCPClient) remove(peer Session) {
-	gSessMgr.Remove(peer)
 	peer.OnDestroyed()
 }
 

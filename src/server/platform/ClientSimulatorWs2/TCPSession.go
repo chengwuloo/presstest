@@ -29,6 +29,9 @@ type TCPSession struct {
 	onWritten     OnWritten
 	onError       OnError
 	closeCallback CloseCallback
+	reason        int32
+	sta           int32
+	ref           *RefCounter
 }
 
 //
@@ -39,7 +42,8 @@ func newTCPSession(conn net.Conn) Session {
 		conn:    conn,
 		ctx:     map[int]interface{}{},
 		WMsq:    newBlockVecMsq(),
-		Channel: NewMyTCPTransmit()}
+		Channel: NewMyTCPTransmit(),
+		ref:     NewRefCounter()}
 	return peer
 }
 
@@ -58,7 +62,30 @@ func (s *TCPSession) Conn() interface{} {
 	return s.conn
 }
 
-//事件回调
+//AddRef 引用计数加1
+func (s *TCPSession) AddRef(name string) {
+	s.ref.AddRef(name)
+}
+
+//Release 引用计数减1，计数为0从会话管理中删除
+func (s *TCPSession) Release(name string) {
+	if s.ref.Release(name) == 0 {
+		//从会话管理中删除
+		gSessMgr.Remove(s)
+	}
+}
+
+//RefCount 引用计数
+func (s *TCPSession) RefCount(name string) int64 {
+	return s.ref.RefCount(name)
+}
+
+//IsConnected 是否连接
+func (s *TCPSession) IsConnected() bool {
+	return atomic.LoadInt32(&s.sta) == KConnected
+}
+
+//SetOnConnected 事件回调
 func (s *TCPSession) SetOnConnected(cb OnConnected) {
 	s.onConnected = cb
 }
@@ -88,7 +115,7 @@ func (s *TCPSession) SetCloseCallback(cb CloseCallback) {
 	s.closeCallback = cb
 }
 
-//创建连接
+//OnEstablished 创建连接
 func (s *TCPSession) OnEstablished() {
 	s.Wg.Add(1)
 	go s.readLoop()
@@ -98,7 +125,7 @@ func (s *TCPSession) OnEstablished() {
 	}
 }
 
-//移除连接
+//OnDestroyed 移除连接
 func (s *TCPSession) OnDestroyed() {
 	if s.onClosed != nil {
 		s.onClosed(s)
@@ -149,7 +176,7 @@ func (s *TCPSession) GetCtx(key int) interface{} {
 //读协程
 func (s *TCPSession) readLoop() {
 	for {
-		_, err := s.Channel.OnRecvMessage(s)
+		msg, err := s.Channel.OnRecvMessage(s)
 		if err != nil {
 			if !IsEOFOrReadError(err) {
 				if s.onError != nil {
@@ -157,6 +184,12 @@ func (s *TCPSession) readLoop() {
 				}
 			}
 			break
+		}
+		if msg == nil {
+			log.Fatalln("readLoop: msg == nil")
+		}
+		if s.onMessage != nil {
+			s.onMessage(msg, s)
 		}
 	}
 	//对端关闭连接
@@ -166,11 +199,12 @@ func (s *TCPSession) readLoop() {
 	}
 	//等待写退出
 	s.Wg.Wait()
-	s.conn = nil
-	log.Println("exit readLoop...")
 	if s.closeCallback != nil {
 		s.closeCallback(s)
 	}
+	s.conn = nil
+	//引用计数减1，计数为0从会话管理中删除
+	s.Release("readLoop")
 }
 
 //写协程
@@ -196,7 +230,6 @@ func (s *TCPSession) writeLoop() {
 	if s.conn != nil {
 		s.conn.Close()
 	}
-	log.Println("exit writeLoop...")
 	s.Wg.Done()
 }
 

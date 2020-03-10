@@ -33,6 +33,12 @@ type Session interface {
 	Conn() interface{}
 	//关闭
 	Close()
+	//引用计数加1
+	AddRef(name string)
+	//引用计数减1，计数为0从会话管理中删除
+	Release(name string)
+	//引用计数
+	RefCount(name string) int64
 	//写
 	Write(msg interface{})
 	//指定ctx

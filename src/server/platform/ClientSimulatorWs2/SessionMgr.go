@@ -6,9 +6,7 @@ package main
 //
 
 import (
-	"runtime"
 	"sync"
-	"sync/atomic"
 )
 
 //
@@ -17,7 +15,7 @@ type SessionMgr interface {
 	Remove(peer Session)
 	Get(sesID int64) Session
 	Count() int64
-	CloseAll()
+	Stop()
 	Wait()
 }
 
@@ -28,29 +26,46 @@ var gSessMgr = newSessionMgr()
 type defaultSessionMgr struct {
 	peers map[int64]Session
 	l     *sync.Mutex
-	c     int64
+	c     *sync.Cond
+	exit  bool
 }
 
 //
 func newSessionMgr() SessionMgr {
-	return &defaultSessionMgr{l: &sync.Mutex{}, peers: map[int64]Session{}}
+	s := &defaultSessionMgr{l: &sync.Mutex{}, peers: map[int64]Session{}}
+	s.c = sync.NewCond(s.l)
+	s.exit = false
+	return s
+
 }
 
 func (s *defaultSessionMgr) Add(conn interface{}) Session {
 	s.l.Lock()
-	peer := newSession(conn)
-	s.peers[peer.ID()] = peer
+	if !s.exit {
+		peer := newSession(conn)
+		s.peers[peer.ID()] = peer
+		//引用计数加1
+		peer.AddRef("SessionMgr")
+		s.l.Unlock()
+		return peer
+	}
 	s.l.Unlock()
-	atomic.AddInt64(&s.c, 1)
-	return peer
+	return nil
 }
 
 //
 func (s *defaultSessionMgr) Remove(peer Session) {
 	s.l.Lock()
 	if _, ok := s.peers[peer.ID()]; ok {
+		//if 0 != peer.RefCount("SessionMgr") {
+		//	log.Panicf("SessionMgr::Remove error")
+		//}
+		//引用计数为0，移除peer
 		delete(s.peers, peer.ID())
-		atomic.AddInt64(&s.c, -1)
+		//log.Printf("--- *** SessionMgr::Remove peers = %v", len(s.peers))
+		if s.exit && len(s.peers) == 0 {
+			s.c.Signal()
+		}
 	}
 	s.l.Unlock()
 }
@@ -66,14 +81,15 @@ func (s *defaultSessionMgr) Get(sesID int64) Session {
 	return nil
 }
 
-//
+//Count 有效连接数
 func (s *defaultSessionMgr) Count() int64 {
-	return atomic.LoadInt64(&s.c)
+	return 0
 }
 
 //
-func (s *defaultSessionMgr) CloseAll() {
+func (s *defaultSessionMgr) Stop() {
 	s.l.Lock()
+	s.exit = true
 	for _, peer := range s.peers {
 		peer.Close()
 	}
@@ -81,7 +97,8 @@ func (s *defaultSessionMgr) CloseAll() {
 }
 
 func (s *defaultSessionMgr) Wait() {
-	for atomic.LoadInt64(&s.c) != 0 {
-		runtime.Gosched()
-	}
+	s.l.Lock()
+	s.c.Wait()
+	//log.Printf("SessionMgr::Wait exit...")
+	s.l.Unlock()
 }

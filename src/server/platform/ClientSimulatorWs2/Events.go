@@ -39,12 +39,16 @@ type readEvent struct {
 //
 func createReadEvent(cmd uint32, msg interface{}, peer Session) *readEvent {
 	ev := &readEvent{cmd: cmd, msg: msg, peer: peer}
+	//引用计数加1
+	//ev.peer.AddRef("Event")
 	return ev
 }
 
 //
 func createReadEventWith(handler ReadCallback, cmd uint32, msg interface{}, peer Session) *readEvent {
 	ev := &readEvent{handler: handler, cmd: cmd, msg: msg, peer: peer}
+	//引用计数加1
+	//ev.peer.AddRef("Event")
 	return ev
 }
 
@@ -59,11 +63,15 @@ type customEvent struct {
 //
 func createCustomEvent(cmd uint32, msg interface{}, peer Session) *customEvent {
 	ev := &customEvent{cmd: cmd, msg: msg, peer: peer}
+	//引用计数加1
+	//ev.peer.AddRef("Event")
 	return ev
 }
 
 //
 func createCustomEventWith(handler CustomCallback, cmd uint32, msg interface{}, peer Session) *customEvent {
 	ev := &customEvent{handler: handler, cmd: cmd, msg: msg, peer: peer}
+	//引用计数加1
+	//ev.peer.AddRef("Event")
 	return ev
 }

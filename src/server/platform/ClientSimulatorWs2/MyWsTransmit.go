@@ -9,10 +9,11 @@ import (
 	"encoding/binary"
 	"errors"
 	"log"
+	"reflect"
 	"server/pb/GameServer"
 	"server/pb/Game_Common"
 	"server/platform/util"
-	
+
 	"github.com/davyxu/cellnet/codec"
 	"github.com/gorilla/websocket"
 )

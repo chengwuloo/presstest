@@ -289,6 +289,8 @@ func (s *DefMsgProcCell) proc(data *Event, worker Worker) {
 		} else {
 			worker.OnRead(ev.cmd, ev.msg, ev.peer)
 		}
+		//引用计数减1
+		//ev.peer.Release("Event")
 	case EVTCustom:
 		ev := data.obj.(*customEvent)
 		if ev.handler != nil {
@@ -296,6 +298,8 @@ func (s *DefMsgProcCell) proc(data *Event, worker Worker) {
 		} else {
 			worker.OnCustom(ev.cmd, ev.msg, ev.peer)
 		}
+		//引用计数减1
+		//ev.peer.Release("Event")
 	}
 	if worker.GetDispatcher() != nil {
 		worker.GetDispatcher().AddTask(data)

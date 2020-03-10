@@ -7,6 +7,7 @@ package main
 
 import (
 	"reflect"
+	"server/pb/BenCiBaoMa"
 	"server/pb/Brnn"
 	"server/pb/ErBaGang"
 	"server/pb/GameServer"
@@ -64,7 +65,7 @@ func init() {
 	//登陆 - 请求
 	cellnet.RegisterMessageMeta(&cellnet.MessageMeta{
 		Codec: codec.MustGetCodec("gogopb"),
-		Type:  reflect.TypeOf((*HallServer.LoginMessage)(nil)).Elem(),
+		Type:  reflect.TypeOf((*HallServer.LoginMessage)(nil)).Elem(), 
 		ID:    ENWORD(2, 3),
 	})
 	//应答
@@ -96,6 +97,17 @@ func init() {
 		Codec: codec.MustGetCodec("gogopb"),
 		Type:  reflect.TypeOf((*HallServer.GetGameServerMessageResponse)(nil)).Elem(),
 		ID:    ENWORD(2, 8),
+	})
+	//上下分通知
+	cellnet.RegisterMessageMeta(&cellnet.MessageMeta{
+		Codec: codec.MustGetCodec("gogopb"),
+		Type:  reflect.TypeOf((*HallServer.OrderNotifyMessage)(nil)).Elem(),
+		ID:    ENWORD(2, 66),
+	})
+	cellnet.RegisterMessageMeta(&cellnet.MessageMeta{
+		Codec: codec.MustGetCodec("gogopb"),
+		Type:  reflect.TypeOf((*Game_Common.ProxyNotifyOrderScoreMessage)(nil)).Elem(),
+		ID:    ENWORD(1, 11),
 	})
 	//进入房间 - 请求
 	cellnet.RegisterMessageMeta(&cellnet.MessageMeta{
@@ -507,6 +519,105 @@ func init() {
 	case GGames.ByName["抢庄牌九"].ID:
 		{
 
+		}
+	case GGames.ByName["奔驰宝马"].ID:
+		{
+			//開始游戲(SUB_S_GameStart)
+			cellnet.RegisterMessageMeta(&cellnet.MessageMeta{
+				Codec: codec.MustGetCodec("gogopb"),
+				Type:  reflect.TypeOf((*BenCiBaoMa.CMD_S_GameStart)(nil)).Elem(),
+				ID:    ENWORD(4, 100),
+			})
+			//游戲結束(SUB_S_GameEnd)
+			cellnet.RegisterMessageMeta(&cellnet.MessageMeta{
+				Codec: codec.MustGetCodec("gogopb"),
+				Type:  reflect.TypeOf((*BenCiBaoMa.CMD_S_GameEnd)(nil)).Elem(),
+				ID:    ENWORD(4, 101),
+			})
+			//開始游戲場景(SUB_S_SCENE_START)
+			cellnet.RegisterMessageMeta(&cellnet.MessageMeta{
+				Codec: codec.MustGetCodec("gogopb"),
+				Type:  reflect.TypeOf((*BenCiBaoMa.CMD_S_Scene_GameStart)(nil)).Elem(),
+				ID:    ENWORD(4, 102),
+			})
+			//結束游戲場景(SUB_S_SCENE_END)
+			cellnet.RegisterMessageMeta(&cellnet.MessageMeta{
+				Codec: codec.MustGetCodec("gogopb"),
+				Type:  reflect.TypeOf((*BenCiBaoMa.CMD_S_Scene_GameEnd)(nil)).Elem(),
+				ID:    ENWORD(4, 103),
+			})
+			//游戏结束时返回玩家结算信息(SUB_S_PLAYERLIST)
+			cellnet.RegisterMessageMeta(&cellnet.MessageMeta{
+				Codec: codec.MustGetCodec("gogopb"),
+				Type:  reflect.TypeOf((*BenCiBaoMa.CMD_S_UserWinList)(nil)).Elem(),
+				ID:    ENWORD(4, 104),
+			})
+			//下注成功返回(SUB_S_JETTON_SUCCESS)
+			cellnet.RegisterMessageMeta(&cellnet.MessageMeta{
+				Codec: codec.MustGetCodec("gogopb"),
+				Type:  reflect.TypeOf((*BenCiBaoMa.CMD_S_PlaceJetSuccess)(nil)).Elem(),
+				ID:    ENWORD(4, 105),
+			})
+			//下注失败返回(SUB_S_JETTON_FAIL)
+			cellnet.RegisterMessageMeta(&cellnet.MessageMeta{
+				Codec: codec.MustGetCodec("gogopb"),
+				Type:  reflect.TypeOf((*BenCiBaoMa.CMD_S_PlaceJettonFail)(nil)).Elem(),
+				ID:    ENWORD(4, 106),
+			})
+			//玩家下注(SUB_C_USER_JETTON)
+			cellnet.RegisterMessageMeta(&cellnet.MessageMeta{
+				Codec: codec.MustGetCodec("gogopb"),
+				Type:  reflect.TypeOf((*BenCiBaoMa.CMD_C_PlaceJet)(nil)).Elem(),
+				ID:    ENWORD(4, 107),
+			})
+			//玩家申請排行榜信息(SUB_C_USER_ASKLIST)应该暂时用不上了
+			cellnet.RegisterMessageMeta(&cellnet.MessageMeta{
+				Codec: codec.MustGetCodec("gogopb"),
+				Type:  reflect.TypeOf((*BenCiBaoMa.CMD_C_AskList)(nil)).Elem(),
+				ID:    ENWORD(4, 108),
+			})
+			//续押命令(SUB_C_USER_REPEAT_JETTON)
+			cellnet.RegisterMessageMeta(&cellnet.MessageMeta{
+				Codec: codec.MustGetCodec("gogopb"),
+				Type:  reflect.TypeOf((*BenCiBaoMa.CMD_C_ReJetton)(nil)).Elem(),
+				ID:    ENWORD(4, 109),
+			})
+			//客户端获取玩家列表命令(SUB_C_QUERY_PLAYERLIST)
+			cellnet.RegisterMessageMeta(&cellnet.MessageMeta{
+				Codec: codec.MustGetCodec("gogopb"),
+				Type:  reflect.TypeOf((*BenCiBaoMa.CMD_C_PlayerList)(nil)).Elem(),
+				ID:    ENWORD(4, 110),
+			})
+			//获取玩家在线列表(SUB_S_QUERY_PLAYLIST)
+			cellnet.RegisterMessageMeta(&cellnet.MessageMeta{
+				Codec: codec.MustGetCodec("gogopb"),
+				Type:  reflect.TypeOf((*BenCiBaoMa.CMD_S_PlayerList)(nil)).Elem(),
+				ID:    ENWORD(4, 111),
+			})
+			//获取当前状态(SUB_C_QUERY_CUR_STATE)
+			cellnet.RegisterMessageMeta(&cellnet.MessageMeta{
+				Codec: codec.MustGetCodec("gogopb"),
+				Type:  reflect.TypeOf((*BenCiBaoMa.CMD_C_CurState)(nil)).Elem(),
+				ID:    ENWORD(4, 112),
+			})
+			//服务器返回当前状态(SUB_S_QUERY_CUR_STATE)
+			cellnet.RegisterMessageMeta(&cellnet.MessageMeta{
+				Codec: codec.MustGetCodec("gogopb"),
+				Type:  reflect.TypeOf((*BenCiBaoMa.CMD_S_CurState)(nil)).Elem(),
+				ID:    ENWORD(4, 113),
+			})
+			//续押下注成功返回(SUB_S_REPEAT_JETTON_OK)
+			cellnet.RegisterMessageMeta(&cellnet.MessageMeta{
+				Codec: codec.MustGetCodec("gogopb"),
+				Type:  reflect.TypeOf((*BenCiBaoMa.CMD_S_RepeatJetSuccess)(nil)).Elem(),
+				ID:    ENWORD(4, 114),
+			})
+			//广播一段时间内其他所有玩家的下注(SUB_S_JETTON_SUCCESS_OTHER)
+			cellnet.RegisterMessageMeta(&cellnet.MessageMeta{
+				Codec: codec.MustGetCodec("gogopb"),
+				Type:  reflect.TypeOf((*BenCiBaoMa.CMD_S_OtherPlaceJetSuccess)(nil)).Elem(),
+				ID:    ENWORD(4, 115),
+			})
 		}
 	}
 }

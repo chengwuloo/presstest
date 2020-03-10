@@ -33,6 +33,7 @@ type WSSession struct {
 	closeCallback CloseCallback
 	reason        int32
 	sta           int32
+	ref           *RefCounter
 }
 
 //
@@ -43,7 +44,8 @@ func newWSSession(conn *websocket.Conn) Session {
 		conn:    conn,
 		ctx:     map[int]interface{}{},
 		WMsq:    newBlockVecMsq(),
-		Channel: NewMyWsTransmit()}
+		Channel: NewMyWsTransmit(),
+		ref:     NewRefCounter()}
 	return peer
 }
 
@@ -62,12 +64,30 @@ func (s *WSSession) Conn() interface{} {
 	return s.conn
 }
 
-//
+//AddRef 引用计数加1
+func (s *WSSession) AddRef(name string) {
+	s.ref.AddRef(name)
+}
+
+//Release 引用计数减1，计数为0从会话管理中删除
+func (s *WSSession) Release(name string) {
+	if s.ref.Release(name) == 0 {
+		//从会话管理中删除
+		gSessMgr.Remove(s)
+	}
+}
+
+//RefCount 引用计数
+func (s *WSSession) RefCount(name string) int64 {
+	return s.ref.RefCount(name)
+}
+
+//IsConnected 是否连接
 func (s *WSSession) IsConnected() bool {
 	return atomic.LoadInt32(&s.sta) == KConnected
 }
 
-//事件回调
+//SetOnConnected 事件回调
 func (s *WSSession) SetOnConnected(cb OnConnected) {
 	s.onConnected = cb
 }
@@ -97,7 +117,7 @@ func (s *WSSession) SetCloseCallback(cb CloseCallback) {
 	s.closeCallback = cb
 }
 
-//创建连接
+//OnEstablished 创建连接
 func (s *WSSession) OnEstablished() {
 	s.Wg.Add(1)
 	s.Cell = gMailbox.GetNextCell()
@@ -109,7 +129,7 @@ func (s *WSSession) OnEstablished() {
 	}
 }
 
-//移除连接
+//OnDestroyed 移除连接
 func (s *WSSession) OnDestroyed() {
 	if s.SesID == 0 {
 		log.Panicln("SesID == 0")
@@ -193,10 +213,12 @@ func (s *WSSession) readLoop() {
 	}
 	//等待写退出
 	s.Wg.Wait()
-	s.conn = nil
 	if s.closeCallback != nil {
 		s.closeCallback(s)
 	}
+	s.conn = nil
+	//引用计数减1，计数为0从会话管理中删除
+	s.Release("readLoop")
 }
 
 //写协程

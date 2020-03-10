@@ -85,18 +85,21 @@ func (s *DefWSClient) ConnectTCP(address string) {
 		return
 	}
 	peer := gSessMgr.Add(conn)
-	peer.SetOnConnected(s.onConnected)
-	peer.SetOnClosed(s.onClosed)
-	peer.SetOnMessage(s.onMessage)
-	peer.SetOnError(s.onError)
-	peer.SetOnWritten(s.onWritten)
-	peer.SetCloseCallback(s.remove)
-	peer.OnEstablished()
+	if peer != nil {
+		peer.SetOnConnected(s.onConnected)
+		peer.SetOnClosed(s.onClosed)
+		peer.SetOnMessage(s.onMessage)
+		peer.SetOnError(s.onError)
+		peer.SetOnWritten(s.onWritten)
+		peer.SetCloseCallback(s.remove)
+		peer.OnEstablished()
+	} else {
+		conn.Close()
+	}
 }
 
 //
 func (s *DefWSClient) remove(peer Session) {
-	gSessMgr.Remove(peer)
 	peer.OnDestroyed()
 }
 
@@ -114,7 +117,7 @@ func (s *DefWSClient) onConnected(peer Session) {
 
 //
 func (s *DefWSClient) onMessage(msg interface{}, peer Session) {
-	//log.Println("--- *** PID[%07d] WSClient :: onMessage ", msg)
+	//log.Printf("--- *** PID[%07d] WSClient :: onMessage %v\n", os.Getpid(), msg)
 	DecodecAddReadTask(msg, peer)
 }
 
@@ -123,7 +126,7 @@ func (s *DefWSClient) onClosed(peer Session) {
 	s.SesID = 0
 	//peer.SetCtx(TagUserInfo, nil)
 	//if 0 == gSessMgr.Count()%500 {
-	log.Printf("--- *** PID[%07d] WSClient :: onClosed %d", os.Getpid(), gSessMgr.Count())
+	//log.Printf("--- *** PID[%07d] WSClient :: onClosed[%v]", os.Getpid(), peer.ID())
 	//}
 }
 

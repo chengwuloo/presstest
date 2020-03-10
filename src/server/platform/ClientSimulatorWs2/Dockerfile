@@ -1,7 +1,7 @@
 #源镜像
 FROM golang:latest
 #作者
-MAINTAINER andy_ro "andy_ro@qq.com"
+MAINTAINER andy_ro@qq.com "fuck_docker@docker.com"
 #设置工作目录
 #WORKDIR $GOPATH/src/server/platform/ClientSimulatorWs2
 WORKDIR .
@@ -11,6 +11,6 @@ ADD ClientSimulatorWs2 .
 #go构建可执行文件
 #RUN go build .
 #暴露端口
-#EXPOSE 9019
+#EXPOSE 6064
 #最终运行docker的命令
 ENTRYPOINT  ["./ClientSimulatorWs2"]
