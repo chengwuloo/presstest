@@ -41,6 +41,7 @@ func ParallGetTokenRequest() {
 //ParallLoginRequest 发起并发连接/登陆请求
 //-------------------------------------------------------------
 func ParallLoginRequest() {
+	//*httpaddr = "192.168.2.215:9090"
 	go func() {
 		//起始时间戳
 		timestart = TimeNowMilliSec()
