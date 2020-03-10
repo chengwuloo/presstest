@@ -1,36 +1,3 @@
-package main
-
-//
-// Created by andy_ro@qq.com
-// 			4/9/2019
-//
-
-//
-type CloseCallback func(peer Session)
-
-//
-type OnConnected func(peer Session)
-
-//
-type OnClosed func(peer Session)
-
-//
-type OnMessage func(msg interface{}, peer Session)
-
-//
-type OnWritten func(msg interface{}, peer Session)
-
-//
-type OnError func(peer Session, err error)
-
-//
-type ReadCallback func(cmd uint32, msg interface{}, peer Session)
-
-//
-type CustomCallback func(cmd uint32, msg interface{}, peer Session)
-
-//
-type CmdCallback func(msg interface{}, peer Session)
-
-//
-type CmdCallbacks map[uint32]CmdCallback
+version https://git-lfs.github.com/spec/v1
+oid sha256:80ce38d219e85be3d6e883269e4a28c18b866c3c3b619d9f53bed5147bb63fa5
+size 620

@@ -1,20 +1,3 @@
-package main
-
-//
-// Created by andy_ro@qq.com
-// 			4/9/2019
-//
-
-//Mailbox 消息邮槽
-type Mailbox interface {
-	GetNextCell() MsgProcCell
-	//Start creator worker工厂
-	//Start num cell数
-	//Start size 时间轮盘大小 size>=timeout>interval
-	Start(creator WorkerCreator, num, size int) MsgProcCell
-	Stop()
-	Wait()
-}
-
-//
-var gMailbox = NewMailbox()
+version https://git-lfs.github.com/spec/v1
+oid sha256:37ee752e28e31a3a696e2448ec9fd6d64081be20f0339000e71f3d266733bc1a
+size 374
