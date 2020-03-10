@@ -1,4 +1,3 @@
-*.go filter=lfs diff=lfs merge=lfs -text
-*.a filter=lfs diff=lfs merge=lfs -text
-*.so filter=lfs diff=lfs merge=lfs -text
-*.zip filter=lfs diff=lfs merge=lfs -text
+version https://git-lfs.github.com/spec/v1
+oid sha256:1b2082b7b76803fdb8f1cfa41e8a2d7b886b86ffd6403814a1d066b8d6e13914
+size 209
