@@ -64,27 +64,4 @@ sysctl -w net.core.somaxconn=65535
 sysctl -a
 
 //https://www.cnblogs.com/seasonxin/p/8192020.html
-mongodb上下分需要建立的索引如下：
 
-1.game_user 表
-UNIQUE(userid)
-UNIQUE(agentid, account)
-
-2.proxy_info 表
-UNIQUE(agentid)
-
-3.add_score_order 表
-UNIQUE(orderId)
-
-4.sub_score_order 表
-UNIQUE(orderId)
-
-5.user_score_record 表
-UNIQUE(userid)
-UNIQUE(agentid, account)
-
-API压测机
-IP:47.88.228.113
-RDP:34389
-USER:skytest
-PASSWARD:*0ma!T1NoUG@TQPkb@8q
