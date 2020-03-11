@@ -1,16 +1,23 @@
   git clone https://github.com/chengwuloo/presstest.git
 
   echo "" >> README.md
+  
   git init
+  
   git add README.md
+  
   git commit -m "first commit"
+  
   git remote add origin https://github.com/chengwuloo/presstest.git
+  
   git push -u origin master
 
   git remote add origin https://github.com/chengwuloo/presstest.git
+  
   git push -u origin master
 
   git fetch https://github.com/chengwuloo/presstest.git
+  
   git pull --allow-unrelated-histories
 
   git lfs install
