@@ -21,19 +21,29 @@
   git pull --allow-unrelated-histories
 
   git lfs install
+  
   git-lfs version
+  
   git lfs track "*.zip"
-
+  
   git add .gitattributes
+  
   git commit -am "modify"
+  
   git push
-
+  
   git add src/thirdpart.zip
+  
   git commit -am "modify"
+  
   git push
+  
   git push origin master
-
+  
   git rm --cached 
+  
   git rm --cached -r .
+  
   git commit --amend
+  
   git push
