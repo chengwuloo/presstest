@@ -1,5 +1,6 @@
 # 压测工具
-
+	go version go1.12.3 linux/amd64
+	libprotoc 3.7.0
 ## 说明
 	服务器压测程序框架组件(golang版本)
 	MsgProc.go 消息处理
