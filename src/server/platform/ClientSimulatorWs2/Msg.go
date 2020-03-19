@@ -38,8 +38,13 @@ const (
 	SubCmdID = iota + ((0xFF & 20) << 8) | (0xFF & 19)
 )
 
-//
+//init 由系统在main之前调用，改由main解析命令行之后手动调用register
 func init() {
+	//register()
+}
+
+//register 注册消息，main解析命令行之后手动调用
+func register() {
 	cellnet.RegisterMessageMeta(&cellnet.MessageMeta{
 		Codec: codec.MustGetCodec("gogopb"),
 		Type:  reflect.TypeOf((*HallServer.GetPlayingGameInfoMessage)(nil)).Elem(),

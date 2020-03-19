@@ -241,6 +241,8 @@ func main() {
 	log.Printf("--- *** PID[%07d] %v\n", os.Getpid(), os.Args)
 	//解析命令行
 	flag.Parse()
+	//注册消息
+	register()
 	//worker工厂
 	smain := NewSentryCreator()
 	//启动10000个邮槽
