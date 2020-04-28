@@ -78,7 +78,8 @@ func (s *DefWSClient) ConnectTCP(address string) {
 	dialer := websocket.Dialer{}
 	dialer.Proxy = http.ProxyFromEnvironment
 	dialer.HandshakeTimeout = 3 * time.Second
-	u := url.URL{Scheme: "ws", Host: address, Path: "/ws"}
+	//u := url.URL{Scheme: "ws", Host: address, Path: "/ws"}
+	u := url.URL{Scheme: "wss", Host: address, Path: "/wss"}
 	conn, _, err := dialer.Dial(u.String(), nil)
 	if err != nil {
 		fmt.Println(err)

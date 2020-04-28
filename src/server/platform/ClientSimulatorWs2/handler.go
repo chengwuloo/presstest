@@ -11,6 +11,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"net/http/cookiejar"
 	"os"
 	"runtime"
 	"runtime/debug"
@@ -114,6 +115,12 @@ func ParallOrderRequest() {
 	go func() {
 		//起始时间戳
 		timestart = TimeNowMilliSec()
+		//GLoginedUsers.AddUserInfo(10004, 952800, 10001)
+		//GLoginedUsers.AddUserInfo(10004, 952800, 10001)
+		//GLoginedUsers.AddUserInfo(10038, 124566, 10001)
+		//GLoginedUsers.AddUserInfo(10038, 124566, 10001)
+		//GLoginedUsers.AddUserInfo(10039, 1335, 10001)
+		//GLoginedUsers.AddUserInfo(10040, 123, 10001)
 		//为10000个账户开辟协程跑QPS，不然会阻塞for
 		for _, item := range GLoginedUsers.Players {
 			//进入访问资源
@@ -151,9 +158,11 @@ func HTTPGetTokenTest(httpaddr string) (e error) {
 	}()
 	requrl := fmt.Sprintf("http://%s/TxVoidHandle", httpaddr)
 	//log.Printf("--- *** PID[%07d] HTTPGetToken >>> %v", os.Getpid(), requrl)
-	//client := http.Client{Timeout: time.Duration(*httptimeout) * time.Second}
-	//rsp, err := client.Get(requrl)
-	rsp, err := http.Get(requrl)
+	jar, _ := cookiejar.New(nil)
+	client := http.Client{Jar: jar, Timeout: time.Duration(*httptimeout) * time.Second}
+	client.CheckRedirect = checkRedirect
+	rsp, err := client.Get(requrl)
+	//rsp, err := http.Get(requrl)
 	if err != nil {
 		//log.Printf("--- *** PID[%07d] HTTPGetToken httpGet %v\n", os.Getpid(), err)
 		e = err
@@ -211,11 +220,13 @@ func HTTPGetToken(httpaddr string, account int64, agentID int) (token, ipaddr st
 	}()
 	requrl := fmt.Sprintf("http://%s/GameHandle?testAccount=%d&agentid=%d", httpaddr, account, agentID)
 	log.Printf("--- *** PID[%07d] HTTPGetToken >>> %v", os.Getpid(), requrl)
-	//client := http.Client{Timeout: time.Duration(*httptimeout) * time.Second}
-	//rsp, err := client.Get(requrl)
-	rsp, err := http.Get(requrl)
+	jar, _ := cookiejar.New(nil)
+	client := http.Client{Jar: jar, Timeout: time.Duration(*httptimeout) * time.Second}
+	client.CheckRedirect = checkRedirect
+	rsp, err := client.Get(requrl)
+	//rsp, err := http.Get(requrl)
 	if err != nil {
-		//log.Printf("--- *** PID[%07d] HTTPGetToken httpGet %v\n", os.Getpid(), err)
+		log.Printf("--- *** PID[%07d] HTTPGetToken httpGet %v\n", os.Getpid(), err)
 		e = err
 		return
 	}
@@ -223,7 +234,7 @@ func HTTPGetToken(httpaddr string, account int64, agentID int) (token, ipaddr st
 	body, err := ioutil.ReadAll(rsp.Body)
 	if err != nil {
 		e = err
-		//log.Printf("--- *** PID[%07d] HTTPGetToken ReadAll %v\n", os.Getgid(), err)
+		log.Printf("--- *** PID[%07d] HTTPGetToken ReadAll %v\n", os.Getgid(), err)
 		return
 	}
 	str := util.Byte2Str(body)
@@ -234,7 +245,7 @@ func HTTPGetToken(httpaddr string, account int64, agentID int) (token, ipaddr st
 	var authResult HTTPAuthResult
 	if err := util.Byte2JSON(body, &authResult); err != nil {
 		//log.Println("----->>>> ", str)
-		//log.Printf("--- *** PID[%07d] HTTPGetToken Byte2JSON %v", os.Getpid(), err)
+		log.Printf("--- *** PID[%07d] HTTPGetToken Byte2JSON %v", os.Getpid(), err)
 		e = err
 		return
 	}
@@ -286,13 +297,16 @@ func HTTPGetToken(httpaddr string, account int64, agentID int) (token, ipaddr st
 			break
 		}
 	}
-	requrl2 := fmt.Sprintf("http://%s/TokenHandle?token=%s&descode=%s&white=%s&versions=%s&logintype=%s&gameid=%s",
-		httpaddr, dic["token"], dic["descode"], dic["white"], dic["versions"], dic["logintype"], dic["gameid"])
-	//client2 := http.Client{Timeout: time.Duration(*httptimeout) * time.Second}
-	//rsp2, err := client2.Get(requrl2)
-	rsp2, err := http.Get(requrl2)
+	// requrl2 := fmt.Sprintf("http://%s/TokenHandle?token=%s&descode=%s&white=%s&versions=%s&logintype=%s&gameid=%s",
+	// 	httpaddr, dic["token"], dic["descode"], dic["white"], dic["versions"], dic["logintype"], dic["gameid"])
+	requrl2 := fmt.Sprintf("https://%v/TokenHandle?token=%v&aid=%v", httpaddr, dic["token"], dic["aid"])
+	jar2, _ := cookiejar.New(nil)
+	client2 := http.Client{Jar: jar2, Timeout: time.Duration(*httptimeout) * time.Second}
+	client2.CheckRedirect = checkRedirect
+	rsp2, err := client2.Get(requrl2)
+	//rsp2, err := http.Get(requrl2)
 	if err != nil {
-		//log.Printf("--- *** PID[%07d] HTTPGetToken httpGet %v\n", os.Getpid(), err)
+		log.Printf("--- *** PID[%07d] HTTPGetToken httpGet %v\n", os.Getpid(), err)
 		e = err
 		return
 	}
@@ -300,10 +314,11 @@ func HTTPGetToken(httpaddr string, account int64, agentID int) (token, ipaddr st
 	body2, err := ioutil.ReadAll(rsp2.Body)
 	if err != nil {
 		e = err
-		//log.Printf("--- *** PID[%07d] HTTPGetToken ReadAll %v\n", os.Getgid(), err)
+		log.Printf("--- *** PID[%07d] HTTPGetToken ReadAll %v\n", os.Getgid(), err)
 		return
 	}
-	ipaddr = dic["domain"] + ":" + dic["port"]
+	//ipaddr = dic["domain"] + ":" + dic["port"]
+	ipaddr = dic["domain"]
 	str2 := util.Byte2Str(body2)
 	token = str2[strings.Index(str2, "=")+1:]
 	if *dynamic == 0 {
@@ -312,6 +327,31 @@ func HTTPGetToken(httpaddr string, account int64, agentID int) (token, ipaddr st
 		log.Printf("--- *** PID[%07d] HTTPGetToken <<< token[%v] wsaddr[%v]", os.Getpid(), token, ipaddr)
 	}
 	return
+}
+
+//
+type HTTPOrderResult struct {
+	Type     float64        `json:"type,omitempty"`
+	Maintype string         `json:"maintype,omitempty"`
+	Data     *HTTPOrderData `json:"data,omitempty"`
+}
+
+//
+type HTTPOrderData struct {
+	OrderID string  `json:"orderid,omitempty"`
+	AgentID float64 `json:"agentid,omitempty"`
+	Account string  `json:"account,omitempty"`
+	Score   float64 `json:"score,omitempty"`
+	Code    float64 `json:"code,omitempty"`
+	Errmsg  string  `json:"errmsg,omitempty"`
+}
+
+//checkRedirect
+func checkRedirect(req *http.Request, via []*http.Request) error {
+	if len(via) >= 10 {
+		return fmt.Errorf("stopped after %v redirects", len(via))
+	}
+	return nil
 }
 
 //HTTPOrderRequest 上下分请求
@@ -325,11 +365,14 @@ func HTTPOrderRequest(httpaddr string, Type int, agentID uint32, timestamp int64
 	requrl := fmt.Sprintf("http://%s/GameHandle?type=%d&agentid=%d&timestamp=%v&paraValue=%v&key=%v",
 		httpaddr, Type, agentID, timestamp, paramVal, key)
 	//log.Printf("--- *** PID[%07d] HTTPOrderRequest >>> %v", os.Getpid(), requrl)
-	client := http.Client{Timeout: time.Duration(*httptimeout) * time.Second}
+	jar, _ := cookiejar.New(nil)
+	client := http.Client{Jar: jar, Timeout: time.Duration(*httptimeout) * time.Second}
+	client.CheckRedirect = checkRedirect
 	rsp, err := client.Get(requrl)
 	//rsp, err := http.Get(requrl)
 	if err != nil {
-		//log.Printf("--- *** PID[%07d] HTTPOrderRequest httpGet %v\n", os.Getpid(), err)
+		log.Printf("--- *** PID[%07d] HTTPOrderRequest >>> %v", os.Getpid(), requrl)
+		log.Printf("--- *** PID[%07d] HTTPOrderRequest httpGet %v\n", os.Getpid(), err)
 		e = err
 		//离开释放资源
 		//gSemOrder.Leave()
@@ -339,13 +382,28 @@ func HTTPOrderRequest(httpaddr string, Type int, agentID uint32, timestamp int64
 	body, err := ioutil.ReadAll(rsp.Body)
 	if err != nil {
 		e = err
-		//log.Printf("--- *** PID[%07d] HTTPOrderRequest ReadAll %v\n", os.Getgid(), err)
+		log.Printf("--- *** PID[%07d] HTTPOrderRequest >>> %v", os.Getpid(), requrl)
+		log.Printf("--- *** PID[%07d] HTTPOrderRequest ReadAll %v\n", os.Getgid(), err)
 		//离开释放资源
 		//gSemOrder.Leave()
 		return
 	}
-	/*str :=*/ util.Byte2Str(body)
-	//log.Printf("--- *** PID[%07d] HTTPOrderRequest <<< %s", os.Getpid(), str)
+	//str := util.Byte2Str(body)
+	//log.Printf("--- *** PID[%07d] HTTPOrderRequest2 <<< %s", os.Getpid(), str)
+	var orderResult HTTPOrderResult
+	if err := util.Byte2JSON(body, &orderResult); err != nil {
+		str := util.Byte2Str(body)
+		log.Printf("--- *** PID[%07d] HTTPOrderRequest >>> %v", os.Getpid(), requrl)
+		log.Printf("--- *** PID[%07d] HTTPOrderRequest <<< %v", os.Getpid(), str)
+		e = err
+		return
+	}
+	data := orderResult.Data
+	if data.Code != 0 {
+		str := util.Byte2Str(body)
+		log.Printf("--- *** PID[%07d] HTTPOrderRequest >>> %v", os.Getpid(), requrl)
+		log.Printf("--- *** PID[%07d] HTTPOrderRequest <<< %v", os.Getpid(), str)
+	}
 	//离开释放资源
 	//gSemOrder.Leave()
 	return
@@ -362,11 +420,14 @@ func HTTPOrderRequest2(httpaddr string, Type int, orderID string, agentID uint32
 	requrl := fmt.Sprintf("http://%s/GameHandle?type=%d&orderid=%s&agentid=%d&userid=%v&account=%v&score=%v",
 		httpaddr, Type, orderID, agentID, userID, account, score)
 	//log.Printf("--- *** PID[%07d] HTTPOrderRequest2 >>> %v", os.Getpid(), requrl)
-	client := http.Client{Timeout: time.Duration(*httptimeout) * time.Second}
+	jar, _ := cookiejar.New(nil)
+	client := http.Client{Jar: jar, Timeout: time.Duration(*httptimeout) * time.Second}
+	client.CheckRedirect = checkRedirect
 	rsp, err := client.Get(requrl)
 	//rsp, err := http.Get(requrl)
 	if err != nil {
-		//log.Printf("--- *** PID[%07d] HTTPOrderRequest2 httpGet %v\n", os.Getpid(), err)
+		log.Printf("--- *** PID[%07d] HTTPOrderRequest2 >>> %v", os.Getpid(), requrl)
+		log.Printf("--- *** PID[%07d] HTTPOrderRequest2 httpGet %v\n", os.Getpid(), err)
 		e = err
 		//离开释放资源
 		//gSemOrder.Leave()
@@ -376,13 +437,28 @@ func HTTPOrderRequest2(httpaddr string, Type int, orderID string, agentID uint32
 	body, err := ioutil.ReadAll(rsp.Body)
 	if err != nil {
 		e = err
-		//log.Printf("--- *** PID[%07d] HTTPOrderRequest2 ReadAll %v\n", os.Getgid(), err)
+		log.Printf("--- *** PID[%07d] HTTPOrderRequest2 >>> %v", os.Getpid(), requrl)
+		log.Printf("--- *** PID[%07d] HTTPOrderRequest2 ReadAll %v\n", os.Getgid(), err)
 		//离开释放资源
 		//gSemOrder.Leave()
 		return
 	}
-	/*str :=*/ util.Byte2Str(body)
+	//str := util.Byte2Str(body)
 	//log.Printf("--- *** PID[%07d] HTTPOrderRequest2 <<< %s", os.Getpid(), str)
+	var orderResult HTTPOrderResult
+	if err := util.Byte2JSON(body, &orderResult); err != nil {
+		str := util.Byte2Str(body)
+		log.Printf("--- *** PID[%07d] HTTPOrderRequest2 >>> %v", os.Getpid(), requrl)
+		log.Printf("--- *** PID[%07d] HTTPOrderRequest2 <<< %v", os.Getpid(), str)
+		e = err
+		return
+	}
+	data := orderResult.Data
+	if data.Code != 0 {
+		str := util.Byte2Str(body)
+		log.Printf("--- *** PID[%07d] HTTPOrderRequest2 >>> %v", os.Getpid(), requrl)
+		log.Printf("--- *** PID[%07d] HTTPOrderRequest2 <<< %v", os.Getpid(), str)
+	}
 	//离开释放资源
 	//gSemOrder.Leave()
 	return
@@ -584,7 +660,7 @@ func sendHTTPOrderRequest(userID int64, account int64, agentID uint32) {
 			}
 			i++
 			//间隔1s发送，不然OS内核发送缓存区被打满，引起I/O超时异常
-			time.Sleep(time.Second)
+			//time.Sleep(500 * time.Millisecond)
 			//跑QPS性能数据
 			sendHTTPOrderRequestQPS(userID, account, agentID)
 		}

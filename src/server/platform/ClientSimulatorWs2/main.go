@@ -193,6 +193,15 @@ func StartDaemon() {
 	go util.ReadConsole(onInput)
 }
 
+//StartDaemon_
+func StartDaemon_() {
+	go func() {
+		ParallOrderRequest()
+	}()
+	//控制台命令行输入 按'q'退出 'c'清屏q
+	go util.ReadConsole(onInput)
+}
+
 //gClients 登陆总数
 var gClients = int64(0)
 
