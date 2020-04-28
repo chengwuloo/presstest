@@ -219,13 +219,13 @@ func HTTPGetToken(httpaddr string, account int64, agentID int) (token, ipaddr st
 		}
 	}()
 	requrl := fmt.Sprintf("http://%s/GameHandle?testAccount=%d&agentid=%d", httpaddr, account, agentID)
-	log.Printf("--- *** PID[%07d] HTTPGetToken >>> %v", os.Getpid(), requrl)
 	jar, _ := cookiejar.New(nil)
 	client := http.Client{Jar: jar, Timeout: time.Duration(*httptimeout) * time.Second}
 	client.CheckRedirect = checkRedirect
 	rsp, err := client.Get(requrl)
 	//rsp, err := http.Get(requrl)
 	if err != nil {
+		log.Printf("--- *** PID[%07d] HTTPGetToken >>> %v", os.Getpid(), requrl)
 		log.Printf("--- *** PID[%07d] HTTPGetToken httpGet %v\n", os.Getpid(), err)
 		e = err
 		return
@@ -234,6 +234,7 @@ func HTTPGetToken(httpaddr string, account int64, agentID int) (token, ipaddr st
 	body, err := ioutil.ReadAll(rsp.Body)
 	if err != nil {
 		e = err
+		log.Printf("--- *** PID[%07d] HTTPGetToken >>> %v", os.Getpid(), requrl)
 		log.Printf("--- *** PID[%07d] HTTPGetToken ReadAll %v\n", os.Getgid(), err)
 		return
 	}
@@ -244,7 +245,7 @@ func HTTPGetToken(httpaddr string, account int64, agentID int) (token, ipaddr st
 	body = util.Str2Byte(str)
 	var authResult HTTPAuthResult
 	if err := util.Byte2JSON(body, &authResult); err != nil {
-		//log.Println("----->>>> ", str)
+		log.Printf("--- *** PID[%07d] HTTPGetToken >>> %v", os.Getpid(), requrl)
 		log.Printf("--- *** PID[%07d] HTTPGetToken Byte2JSON %v", os.Getpid(), err)
 		e = err
 		return
@@ -306,6 +307,7 @@ func HTTPGetToken(httpaddr string, account int64, agentID int) (token, ipaddr st
 	rsp2, err := client2.Get(requrl2)
 	//rsp2, err := http.Get(requrl2)
 	if err != nil {
+		log.Printf("--- *** PID[%07d] HTTPGetToken >>> %v\n", os.Getpid(), requrl2)
 		log.Printf("--- *** PID[%07d] HTTPGetToken httpGet %v\n", os.Getpid(), err)
 		e = err
 		return
@@ -314,6 +316,7 @@ func HTTPGetToken(httpaddr string, account int64, agentID int) (token, ipaddr st
 	body2, err := ioutil.ReadAll(rsp2.Body)
 	if err != nil {
 		e = err
+		log.Printf("--- *** PID[%07d] HTTPGetToken >>> %v\n", os.Getpid(), requrl2)
 		log.Printf("--- *** PID[%07d] HTTPGetToken ReadAll %v\n", os.Getgid(), err)
 		return
 	}
@@ -399,7 +402,7 @@ func HTTPOrderRequest(httpaddr string, Type int, agentID uint32, timestamp int64
 		return
 	}
 	data := orderResult.Data
-	if data.Code != 0 {
+	if data.Code == 36 || data.Code == 46 {
 		str := util.Byte2Str(body)
 		log.Printf("--- *** PID[%07d] HTTPOrderRequest >>> %v", os.Getpid(), requrl)
 		log.Printf("--- *** PID[%07d] HTTPOrderRequest <<< %v", os.Getpid(), str)
@@ -454,7 +457,7 @@ func HTTPOrderRequest2(httpaddr string, Type int, orderID string, agentID uint32
 		return
 	}
 	data := orderResult.Data
-	if data.Code != 0 {
+	if data.Code == 36 || data.Code == 46 {
 		str := util.Byte2Str(body)
 		log.Printf("--- *** PID[%07d] HTTPOrderRequest2 >>> %v", os.Getpid(), requrl)
 		log.Printf("--- *** PID[%07d] HTTPOrderRequest2 <<< %v", os.Getpid(), str)
@@ -467,16 +470,18 @@ func HTTPOrderRequest2(httpaddr string, Type int, orderID string, agentID uint32
 //sendHTTPOrderRequestQPS 上下分请求
 func sendHTTPOrderRequestQPS(userID int64, account int64, agentID uint32) (e error) {
 	var opType int
+	var score int64
+	orderID := util.RandomNumberStr(50)
 	if (rand.Intn(100) % 2) == 0 {
 		opType = 2 //上分
+		score = rand.Int63n(2) + 200000
 	} else {
 		opType = 3 //下分
+		score = rand.Int63n(2) + 1
 	}
 	if *isdecrypt != 0 {
 		//加密方式HTTP请求 ///
 		timestamp := TimeNow().SinceUnixEpoch()
-		orderID := util.RandomNumberStr(20)
-		score := rand.Int63n(2) + 1
 		//str := fmt.Sprintf("%v%v%v", agentID, timestamp, *md5code)
 		//md5编码 bug???
 		key := util.MD5(fmt.Sprintf("%v%v%v", agentID, timestamp, *md5code), true)
@@ -566,8 +571,6 @@ func sendHTTPOrderRequestQPS(userID int64, account int64, agentID uint32) (e err
 		}
 	} else {
 		//非加密方式HTTP请求 ///
-		orderID := util.RandomNumberStr(20)
-		score := rand.Int63n(2) + 1
 		if atomic.LoadInt64(&gOrderTimeStart) == 0 {
 			//起始时间戳(ms)
 			atomic.StoreInt64(&gOrderTimeStart, TimeNowMilliSec().SinceUnixEpoch())
