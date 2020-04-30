@@ -21,13 +21,16 @@ import (
 //.\ClientSimulatorWs2.exe -httpaddr= -wsaddr= -mailboxs= -totalClients=%d -numClients=%d -numClients2=%d -numClients3=%d -baseTest= -deltaClients= -deltaTime= -interval= -timeout=
 
 //HTTPAddr HTTP请求token地址 192.168.2.214:8088
-var httpaddr = flag.String("httpaddr", "192.168.2.214:8088", "")
+var httpaddr = flag.String("httpaddr", "http://192.168.2.214:8088", "")
 
 //wsaddr Websocket登陆地址
-var wsaddr = flag.String("wsaddr", "192.168.2.93:10000", "")
+var wsaddr = flag.String("wsaddr", "ws://192.168.2.93:10000", "")
+
+//wssl openssl认证wss
+var wssl = flag.Int("wssl", 0, "")
 
 //httpaddr1 HTTP上下分API请求地址 192.168.2.93:8080
-var httpaddr1 = flag.String("httpaddr1", "192.168.2.93:8080", "")
+var httpaddr1 = flag.String("httpaddr1", "http://192.168.2.93:8080", "")
 
 //httptimeout HTTP上下分API请求超时时间
 var httptimeout = flag.Int("httptimeout", 5, "")

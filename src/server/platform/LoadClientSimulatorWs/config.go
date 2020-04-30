@@ -18,6 +18,7 @@ type iniConfig struct {
 	isdecrypt    int
 	agentid      int
 	dynamic      int
+	wssl         int
 	numMailbox   int
 	totalClients int
 	numClients   int
@@ -51,6 +52,7 @@ func readini(filename string) (c *iniConfig) {
 	c.httptimeout = ini.GetInt("httpaddr", "timeout")
 	c.wsaddr = ini.GetString("wsaddr", "wsaddr")
 	c.dynamic = ini.GetInt("wsaddr", "dynamic")
+	c.wssl = ini.GetInt("wsaddr", "wssl")
 	c.numMailbox = ini.GetInt("mailboxs", "mailboxs")
 	c.totalClients = ini.GetInt("clients", "totalClients")
 	c.numClients = ini.GetInt("clients", "numClients")

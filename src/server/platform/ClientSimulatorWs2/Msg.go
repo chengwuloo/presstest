@@ -70,7 +70,7 @@ func register() {
 	//登陆 - 请求
 	cellnet.RegisterMessageMeta(&cellnet.MessageMeta{
 		Codec: codec.MustGetCodec("gogopb"),
-		Type:  reflect.TypeOf((*HallServer.LoginMessage)(nil)).Elem(), 
+		Type:  reflect.TypeOf((*HallServer.LoginMessage)(nil)).Elem(),
 		ID:    ENWORD(2, 3),
 	})
 	//应答
@@ -104,11 +104,11 @@ func register() {
 		ID:    ENWORD(2, 8),
 	})
 	//上下分通知
-	cellnet.RegisterMessageMeta(&cellnet.MessageMeta{
-		Codec: codec.MustGetCodec("gogopb"),
-		Type:  reflect.TypeOf((*HallServer.OrderNotifyMessage)(nil)).Elem(),
-		ID:    ENWORD(2, 66),
-	})
+	// cellnet.RegisterMessageMeta(&cellnet.MessageMeta{
+	// 	Codec: codec.MustGetCodec("gogopb"),
+	// 	Type:  reflect.TypeOf((*HallServer.OrderNotifyMessage)(nil)).Elem(),
+	// 	ID:    ENWORD(2, 66),
+	// })
 	cellnet.RegisterMessageMeta(&cellnet.MessageMeta{
 		Codec: codec.MustGetCodec("gogopb"),
 		Type:  reflect.TypeOf((*Game_Common.ProxyNotifyOrderScoreMessage)(nil)).Elem(),

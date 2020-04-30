@@ -21,13 +21,16 @@ import (
 var children = flag.Int("children", 5, "")
 
 //HTTPAddr HTTP请求token地址
-var httpaddr = flag.String("httpaddr", "192.168.2.30:801", "")
+var httpaddr = flag.String("httpaddr", "http://192.168.2.30:801", "")
 
 //wsaddr Websocket登陆地址
-var wsaddr = flag.String("wsaddr", "192.168.2.75:10000", "")
+var wsaddr = flag.String("wsaddr", "ws://192.168.2.75:10000", "")
+
+//wssl openssl认证wss
+var wssl = flag.Int("wssl", 0, "")
 
 //httpaddr1 HTTP上下分API请求地址 192.168.2.93:8080
-var httpaddr1 = flag.String("httpaddr1", "192.168.2.93:8080", "")
+var httpaddr1 = flag.String("httpaddr1", "http://192.168.2.93:8080", "")
 
 //httptimeout HTTP上下分API请求超时时间
 var httptimeout = flag.Int("httptimeout", 5, "")
@@ -176,6 +179,7 @@ func loadConf() bool {
 		*md5code = c.md5code
 		*descode = c.descode
 		*dynamic = c.dynamic
+		*wssl = c.wssl
 		*numMailbox = c.numMailbox
 		*totalClients = c.totalClients
 		*numClients = c.numClients
@@ -223,10 +227,10 @@ func main() {
 	}()
 	//启动客户端进程数*children
 	for i := 0; i < *children; i++ {
-		cmdLine := fmt.Sprintf("%s -httpaddr=%s -dynamic=%d -wsaddr=%s -mailboxs=%d -totalClients=%d -numClients=%d -numClients2=%d -numClients3=%d -baseTest=%d -deltaClients=%d -deltaTime=%d -interval=%d -timeout=%d -gameID=%d -roomID=%d -prefix=%s -tokenstart=%d -tokenend=%d"+
+		cmdLine := fmt.Sprintf("%s -httpaddr=%s -dynamic=%d -wssl=%d -wsaddr=%s -mailboxs=%d -totalClients=%d -numClients=%d -numClients2=%d -numClients3=%d -baseTest=%d -deltaClients=%d -deltaTime=%d -interval=%d -timeout=%d -gameID=%d -roomID=%d -prefix=%s -tokenstart=%d -tokenend=%d"+
 			" -httpaddr1=%s -httptimeout=%d -isdecrypt=%d -agentid=%d -md5code=%s -descode=%s",
 			execStr,
-			*httpaddr, *dynamic, *wsaddr, *numMailbox, *totalClients, *numClients, *numClients2, *numClients3, *baseAccount+int64(*totalClients)*int64(i), *deltaClients, *deltaTime, *heartbeat, *timeout, *subGameID, *subRoomID,
+			*httpaddr, *dynamic, *wssl, *wsaddr, *numMailbox, *totalClients, *numClients, *numClients2, *numClients3, *baseAccount+int64(*totalClients)*int64(i), *deltaClients, *deltaTime, *heartbeat, *timeout, *subGameID, *subRoomID,
 			*tokenprefix, *tokenstart+int(*totalClients)*int(i), *tokenend,
 			*httpaddr1, *httptimeout, *isdecrypt, *agentID, *md5code, *descode)
 		args := strings.Split(cmdLine, " ")

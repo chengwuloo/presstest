@@ -73,7 +73,11 @@ func ParallLoginRequest() {
 			if *dynamic == 0 {
 				client.ConnectTCP(*wsaddr)
 			} else {
-				client.ConnectTCP(ipaddr)
+				if *wssl == 0 {
+					client.ConnectTCP("ws://" + ipaddr)
+				} else {
+					client.ConnectTCP("wss://" + ipaddr)
+				}
 			}
 		}
 	}()
@@ -156,7 +160,14 @@ func HTTPGetTokenTest(httpaddr string) (e error) {
 			log.Fatalln(debug.Stack())
 		}
 	}()
-	requrl := fmt.Sprintf("http://%s/TxVoidHandle", httpaddr)
+	//http://ip:port https://ip:port
+	vec := strings.Split(httpaddr, "//")
+	if len(vec) != 2 {
+		return
+	}
+	proto := strings.Trim(vec[0], ":")
+	host := vec[1]
+	requrl := fmt.Sprintf("%v://%v/TxVoidHandle", proto, host)
 	//log.Printf("--- *** PID[%07d] HTTPGetToken >>> %v", os.Getpid(), requrl)
 	jar, _ := cookiejar.New(nil)
 	client := http.Client{Jar: jar, Timeout: time.Duration(*httptimeout) * time.Second}
@@ -218,7 +229,14 @@ func HTTPGetToken(httpaddr string, account int64, agentID int) (token, ipaddr st
 			log.Fatalln(debug.Stack())
 		}
 	}()
-	requrl := fmt.Sprintf("http://%s/GameHandle?testAccount=%d&agentid=%d", httpaddr, account, agentID)
+	//http://ip:port https://ip:port
+	vec := strings.Split(httpaddr, "//")
+	if len(vec) != 2 {
+		return
+	}
+	proto := strings.Trim(vec[0], ":")
+	host := vec[1]
+	requrl := fmt.Sprintf("%v://%v/GameHandle?testAccount=%d&agentid=%d", proto, host, account, agentID)
 	jar, _ := cookiejar.New(nil)
 	client := http.Client{Jar: jar, Timeout: time.Duration(*httptimeout) * time.Second}
 	client.CheckRedirect = checkRedirect
@@ -298,9 +316,9 @@ func HTTPGetToken(httpaddr string, account int64, agentID int) (token, ipaddr st
 			break
 		}
 	}
-	// requrl2 := fmt.Sprintf("http://%s/TokenHandle?token=%s&descode=%s&white=%s&versions=%s&logintype=%s&gameid=%s",
-	// 	httpaddr, dic["token"], dic["descode"], dic["white"], dic["versions"], dic["logintype"], dic["gameid"])
-	requrl2 := fmt.Sprintf("https://%v/TokenHandle?token=%v&aid=%v", httpaddr, dic["token"], dic["aid"])
+	// requrl2 := fmt.Sprintf("%v://%v/TokenHandle?token=%s&descode=%s&white=%s&versions=%s&logintype=%s&gameid=%s",
+	// 	proto, host, dic["token"], dic["descode"], dic["white"], dic["versions"], dic["logintype"], dic["gameid"])
+	requrl2 := fmt.Sprintf("%v://%v/TokenHandle?token=%v&aid=%v", proto, host, dic["token"], dic["aid"])
 	jar2, _ := cookiejar.New(nil)
 	client2 := http.Client{Jar: jar2, Timeout: time.Duration(*httptimeout) * time.Second}
 	client2.CheckRedirect = checkRedirect
@@ -365,8 +383,15 @@ func HTTPOrderRequest(httpaddr string, Type int, agentID uint32, timestamp int64
 			log.Fatalln(debug.Stack())
 		}
 	}()
-	requrl := fmt.Sprintf("http://%s/GameHandle?type=%d&agentid=%d&timestamp=%v&paraValue=%v&key=%v",
-		httpaddr, Type, agentID, timestamp, paramVal, key)
+	//http://ip:port https://ip:port
+	vec := strings.Split(httpaddr, "//")
+	if len(vec) != 2 {
+		return
+	}
+	proto := strings.Trim(vec[0], ":")
+	host := vec[1]
+	requrl := fmt.Sprintf("%v://%v/GameHandle?type=%d&agentid=%d&timestamp=%v&paraValue=%v&key=%v",
+		proto, host, Type, agentID, timestamp, paramVal, key)
 	//log.Printf("--- *** PID[%07d] HTTPOrderRequest >>> %v", os.Getpid(), requrl)
 	jar, _ := cookiejar.New(nil)
 	client := http.Client{Jar: jar, Timeout: time.Duration(*httptimeout) * time.Second}
@@ -420,8 +445,15 @@ func HTTPOrderRequest2(httpaddr string, Type int, orderID string, agentID uint32
 			log.Fatalln(debug.Stack())
 		}
 	}()
-	requrl := fmt.Sprintf("http://%s/GameHandle?type=%d&orderid=%s&agentid=%d&userid=%v&account=%v&score=%v",
-		httpaddr, Type, orderID, agentID, userID, account, score)
+	//http://ip:port https://ip:port
+	vec := strings.Split(httpaddr, "//")
+	if len(vec) != 2 {
+		return
+	}
+	proto := strings.Trim(vec[0], ":")
+	host := vec[1]
+	requrl := fmt.Sprintf("%v://%v/GameHandle?type=%d&orderid=%s&agentid=%d&userid=%v&account=%v&score=%v",
+		proto, host, Type, orderID, agentID, userID, account, score)
 	//log.Printf("--- *** PID[%07d] HTTPOrderRequest2 >>> %v", os.Getpid(), requrl)
 	jar, _ := cookiejar.New(nil)
 	client := http.Client{Jar: jar, Timeout: time.Duration(*httptimeout) * time.Second}

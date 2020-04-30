@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	_ "github.com/davyxu/cellnet/codec/gogopb"
@@ -78,8 +79,15 @@ func (s *DefWSClient) ConnectTCP(address string) {
 	dialer := websocket.Dialer{}
 	dialer.Proxy = http.ProxyFromEnvironment
 	dialer.HandshakeTimeout = 3 * time.Second
-	//u := url.URL{Scheme: "ws", Host: address, Path: "/ws"}
-	u := url.URL{Scheme: "wss", Host: address, Path: "/wss"}
+	//ws://ip:port wss://ip:port
+	vec := strings.Split(address, "//")
+	if len(vec) != 2 {
+		return
+	}
+	proto := strings.Trim(vec[0], ":")
+	host := vec[1]
+	//log.Printf("ConnectTCP %v://%v\n", proto, host)
+	u := url.URL{Scheme: proto, Host: host, Path: "/"}
 	conn, _, err := dialer.Dial(u.String(), nil)
 	if err != nil {
 		fmt.Println(err)
