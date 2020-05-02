@@ -237,6 +237,7 @@ func HTTPGetToken(httpaddr string, account int64, agentID int) (token, ipaddr st
 	proto := strings.Trim(vec[0], ":")
 	host := vec[1]
 	requrl := fmt.Sprintf("%v://%v/GameHandle?testAccount=%d&agentid=%d", proto, host, account, agentID)
+	//log.Println(requrl)
 	jar, _ := cookiejar.New(nil)
 	client := http.Client{Jar: jar, Timeout: time.Duration(*httptimeout) * time.Second}
 	client.CheckRedirect = checkRedirect
@@ -319,6 +320,7 @@ func HTTPGetToken(httpaddr string, account int64, agentID int) (token, ipaddr st
 	// requrl2 := fmt.Sprintf("%v://%v/TokenHandle?token=%s&descode=%s&white=%s&versions=%s&logintype=%s&gameid=%s",
 	// 	proto, host, dic["token"], dic["descode"], dic["white"], dic["versions"], dic["logintype"], dic["gameid"])
 	requrl2 := fmt.Sprintf("%v://%v/TokenHandle?token=%v&aid=%v", proto, host, dic["token"], dic["aid"])
+	//log.Println(requrl2)
 	jar2, _ := cookiejar.New(nil)
 	client2 := http.Client{Jar: jar2, Timeout: time.Duration(*httptimeout) * time.Second}
 	client2.CheckRedirect = checkRedirect
@@ -341,6 +343,7 @@ func HTTPGetToken(httpaddr string, account int64, agentID int) (token, ipaddr st
 	//ipaddr = dic["domain"] + ":" + dic["port"]
 	ipaddr = dic["domain"]
 	str2 := util.Byte2Str(body2)
+	//log.Println(str2)
 	token = str2[strings.Index(str2, "=")+1:]
 	if *dynamic == 0 {
 		log.Printf("--- *** PID[%07d] HTTPGetToken <<< token[%v] wsaddr[%v]", os.Getpid(), token, *wsaddr)

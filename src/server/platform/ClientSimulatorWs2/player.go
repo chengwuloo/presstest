@@ -147,9 +147,9 @@ func (s *Player) resultPlayerLogin(msg interface{}, peer Session) {
 		client.Pwd = rspdata.GamePass
 		client.AgentID = rspdata.AgentId
 		//登陆成功，压入桶元素
-		client.Cursor = s.entry.GetTimeWheel().PushBucket(peer.ID(), int32(*timeout)/1000)
+		//client.Cursor = s.entry.GetTimeWheel().PushBucket(peer.ID(), int32(*timeout)/1000)
 		//登陆成功，间隔发送心跳包
-		client.HeartID = s.entry.RunAfter(int32(*heartbeat), client)
+		//client.HeartID = s.entry.RunAfter(int32(*heartbeat), client)
 		//游戏类型和房间都有效，则进入房间
 		// p, ok := GGames.Exist(int32(*subGameID))
 		// if 0 != *subGameID && 0 != *subRoomID && ok && p.Exist(int32(*subRoomID)) {
@@ -162,7 +162,7 @@ func (s *Player) resultPlayerLogin(msg interface{}, peer Session) {
 	} else {
 		atomic.AddInt64(&gClientsFailed, 1)
 		//失败关闭
-		//peer.Close()
+		peer.Close()
 	}
 	c := atomic.AddInt64(&gClients, 1)
 	if c%int64(*numClients) == 0 {
@@ -325,15 +325,15 @@ func (s *Player) resultPlayerLeave(msg interface{}, peer Session) {
 
 //resultOrderNotify 服务端返回 - 上下分通知
 //-------------------------------------------------------------
-func (s *Player) resultOrderNotify(msg interface{}, peer Session) {
-	rspdata, ok := msg.(*HallServer.OrderNotifyMessage)
-	if !ok {
-		log.Fatalln("resultOrderNotify ", ok)
-	}
-	util.Logy("UserClient", "Player", "resultOrderNotify", rspdata)
-	//发送上下分请求
-	//sendHTTPOrderRequest(peer)
-}
+// func (s *Player) resultOrderNotify(msg interface{}, peer Session) {
+// 	rspdata, ok := msg.(*HallServer.OrderNotifyMessage)
+// 	if !ok {
+// 		log.Fatalln("resultOrderNotify ", ok)
+// 	}
+// 	util.Logy("UserClient", "Player", "resultOrderNotify", rspdata)
+// 	//发送上下分请求
+// 	//sendHTTPOrderRequest(peer)
+// }
 
 //resultProxyOrderNotify 服务端返回 - 上下分通知
 //-------------------------------------------------------------
