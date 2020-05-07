@@ -28,7 +28,6 @@ import (
 //ParallGetTokenRequest 发起并发获取Token请求
 //-------------------------------------------------------------
 func ParallGetTokenRequest() {
-	//*httpaddr = "192.168.2.214:8083"
 	go func() {
 		//起始时间戳
 		timestart = TimeNowMilliSec()
@@ -42,7 +41,6 @@ func ParallGetTokenRequest() {
 //ParallLoginRequest 发起并发连接/登陆请求
 //-------------------------------------------------------------
 func ParallLoginRequest() {
-	//*httpaddr = "192.168.2.215:9090"
 	go func() {
 		//起始时间戳
 		timestart = TimeNowMilliSec()

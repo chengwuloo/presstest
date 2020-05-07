@@ -56,6 +56,20 @@ func AesDecrypt(crypted, key []byte) []byte {
 	return origData
 }
 
+//AesDecryptECB ECB解密
+func AesDecryptECB(src, key []byte) []byte {
+	cipher, _ := aes.NewCipher(Key16(key))
+	dst := make([]byte, len(src))
+	for bs, be := 0, cipher.BlockSize(); bs < len(src); bs, be = bs+cipher.BlockSize(), be+cipher.BlockSize() {
+		cipher.Decrypt(dst[bs:be], src[bs:be])
+	}
+	trim := 0
+	if len(dst) > 0 {
+		trim = len(dst) - int(dst[len(dst)-1])
+	}
+	return dst[:trim]
+}
+
 //AesEncrypt ...
 func AesEncrypt(src, key string) []byte {
 	block, err := aes.NewCipher([]byte(key))
@@ -75,6 +89,35 @@ func AesEncrypt(src, key string) []byte {
 
 	//fmt.Println("base64UrlSafe result:", Base64UrlSafeEncode(crypted))
 	return crypted
+}
+
+//AesEncryptECB ECB加密
+func AesEncryptECB(src, key []byte) []byte {
+	cipher, _ := aes.NewCipher(Key16(key))
+	length := (len(src) + aes.BlockSize) / aes.BlockSize
+	plain := make([]byte, length*aes.BlockSize)
+	copy(plain, src)
+	pad := byte(len(plain) - len(src))
+	for i := len(src); i < len(plain); i++ {
+		plain[i] = pad
+	}
+	dst := make([]byte, len(plain))
+	for bs, be := 0, cipher.BlockSize(); bs <= len(src); bs, be = bs+cipher.BlockSize(), be+cipher.BlockSize() {
+		cipher.Encrypt(dst[bs:be], plain[bs:be])
+	}
+	return dst
+}
+
+//Key16 ...
+func Key16(key []byte) (genKey []byte) {
+	genKey = make([]byte, 16)
+	copy(genKey, key)
+	for i := 16; i < len(key); {
+		for j := 0; j < 16 && i < len(key); j, i = j+1, i+1 {
+			genKey[j] ^= key[i]
+		}
+	}
+	return genKey
 }
 
 //PKCS5Padding ...
